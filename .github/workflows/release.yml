@@ -1,0 +1,56 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_ref:
+        description: Branch or tag to build from
+        required: true
+        default: master
+        type: string
+      version:
+        description: Version number without the v prefix
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.target_ref }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Package release bundle
+        shell: pwsh
+        run: |
+          $version = "${{ inputs.version }}"
+          $bundleName = "spotify-plus-v$version.zip"
+          Compress-Archive -Path dist\spotify-plus.js,README.md,manifest.json,install.ps1 -DestinationPath $bundleName -Force
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ inputs.version }}
+          name: v${{ inputs.version }}
+          generate_release_notes: true
+          files: |
+            dist/spotify-plus.js
+            spotify-plus-v${{ inputs.version }}.zip
