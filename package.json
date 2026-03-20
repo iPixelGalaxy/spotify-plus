@@ -1,0 +1,26 @@
+{
+  "name": "spotify-plus",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A Spicetify extension for reducing Spotify UI clutter and adding configurable menu cleanup.",
+  "scripts": {
+    "sc": "spicetify-creator",
+    "dev": "spicetify-creator dev",
+    "build": "spicetify-creator build",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "fmt": "oxfmt"
+  },
+  "dependencies": {
+    "@spicemod/creator": "^0.0.32",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "oxfmt": "^0.41.0",
+    "oxlint": "^1.56.0",
+    "typescript": "^5.8.2"
+  }
+}
