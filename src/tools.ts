@@ -1,3 +1,5 @@
+import { SETTINGS_CHANGED_EVENT, getSettings } from "./config";
+
 const LAST_LOCATION_KEY = "spotify-plus.last-location";
 
 type StoredLocation = {
@@ -186,6 +188,14 @@ function scheduleDevtoolsRetry() {
   }, DEVTOOLS_RETRY_INTERVAL_MS);
 }
 
+function resetDevtoolsRetryState() {
+  devtoolsRetryAttempts = 0;
+  if (devtoolsRetryTimer !== null) {
+    window.clearTimeout(devtoolsRetryTimer);
+    devtoolsRetryTimer = null;
+  }
+}
+
 function getHistory(): HistoryLike | null {
   return (Spicetify.Platform?.History as HistoryLike | undefined) ?? null;
 }
@@ -361,10 +371,18 @@ function onToolKeydown(event: KeyboardEvent) {
 }
 
 export function startToolsController() {
-  ensureDeveloperModePersisted();
-  if (!tryOpenDevtools()) {
-    scheduleDevtoolsRetry();
+  const settings = getSettings();
+
+  if (settings.enableDevtoolsOnStartup) {
+    ensureDeveloperModePersisted();
+    resetDevtoolsRetryState();
+    if (!tryOpenDevtools()) {
+      scheduleDevtoolsRetry();
+    }
+  } else {
+    resetDevtoolsRetryState();
   }
+
   restorePreviousSessionOnce();
   attachRestoreTracking();
 
@@ -372,4 +390,23 @@ export function startToolsController() {
     window.addEventListener("keydown", onToolKeydown, true);
     keydownBound = true;
   }
+
+  window.addEventListener(SETTINGS_CHANGED_EVENT, (event) => {
+    const key = (event as CustomEvent<{ key?: string }>).detail?.key;
+    if (key !== "enableDevtoolsOnStartup") {
+      return;
+    }
+
+    const updatedSettings = getSettings();
+    if (updatedSettings.enableDevtoolsOnStartup) {
+      ensureDeveloperModePersisted();
+      resetDevtoolsRetryState();
+      if (!tryOpenDevtools()) {
+        scheduleDevtoolsRetry();
+      }
+      return;
+    }
+
+    resetDevtoolsRetryState();
+  });
 }

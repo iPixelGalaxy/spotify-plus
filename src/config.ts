@@ -30,6 +30,7 @@ export interface PlaylistFolderEntry {
 }
 
 export interface SpotifyPlusSettings {
+  enableDevtoolsOnStartup: boolean;
   hideFriendActivityButton: boolean;
   hideLyricsButton: boolean;
   hideMiniplayerButton: boolean;
@@ -46,6 +47,7 @@ export interface SpotifyPlusSettings {
 }
 
 export const defaultSettings: SpotifyPlusSettings = {
+  enableDevtoolsOnStartup: true,
   hideFriendActivityButton: false,
   hideLyricsButton: false,
   hideMiniplayerButton: false,
@@ -62,7 +64,6 @@ export const defaultSettings: SpotifyPlusSettings = {
 };
 
 const legacySettingKeys = [
-  "enableDevtoolsOnStartup",
   "reloadAppWithF5",
   "pauseAppWithF8",
   "windowTitleOverride",
@@ -148,6 +149,7 @@ export function ensureDefaultSettings() {
 
 export function getSettings(): SpotifyPlusSettings {
   return {
+    enableDevtoolsOnStartup: getSetting("enableDevtoolsOnStartup"),
     hideFriendActivityButton: getSetting("hideFriendActivityButton"),
     hideLyricsButton: getSetting("hideLyricsButton"),
     hideMiniplayerButton: getSetting("hideMiniplayerButton"),

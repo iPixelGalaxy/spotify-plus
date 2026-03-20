@@ -132,6 +132,13 @@ function isYourUpdatesContainer(element: HTMLElement) {
   return hasYourUpdatesHeading || hasLoadingSpinner;
 }
 
+function isDivider(element: HTMLElement) {
+  return (
+    element.classList.contains("main-contextMenu-dividerAfter") ||
+    element.classList.contains("main-contextMenu-dividerBefore")
+  );
+}
+
 function applyProfileMenuCleanup() {
   const settings = getSettings();
   const menus = Array.from(
@@ -164,13 +171,14 @@ function applyProfileMenuCleanup() {
       toggleElementDisplay(updatesContainer, settings.hideYourUpdatesSection);
     }
 
-    const updatesDivider = directChildren.find(
-      (child) =>
-        child.classList.contains("main-contextMenu-dividerAfter") &&
-        (!updatesContainer || child.nextElementSibling === updatesContainer)
-    );
-    if (updatesDivider) {
-      toggleElementDisplay(updatesDivider, settings.hideYourUpdatesSection);
+    if (updatesContainer) {
+      const adjacentDividers = [updatesContainer.previousElementSibling, updatesContainer.nextElementSibling]
+        .filter((child): child is HTMLElement => child instanceof HTMLElement)
+        .filter((child) => isDivider(child));
+
+      for (const divider of adjacentDividers) {
+        toggleElementDisplay(divider, settings.hideYourUpdatesSection);
+      }
     }
   }
 }
