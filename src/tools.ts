@@ -31,6 +31,73 @@ let keydownBound = false;
 const RESTORE_RETRY_INTERVAL_MS = 500;
 const RESTORE_RETRY_MAX_ATTEMPTS = 20;
 
+function ensureDeveloperModePersisted() {
+  const globalWindow = window as Window & {
+    require?: (id: string) => unknown;
+    process?: { env?: Record<string, string | undefined> };
+  };
+
+  if (typeof globalWindow.require !== "function") {
+    return;
+  }
+
+  try {
+    const fs = globalWindow.require("fs") as {
+      existsSync: (path: string) => boolean;
+      mkdirSync: (path: string, options?: { recursive?: boolean }) => void;
+      readFileSync: (path: string, encoding: string) => string;
+      writeFileSync: (path: string, data: string, encoding: string) => void;
+    };
+    const path = globalWindow.require("path") as {
+      dirname: (path: string) => string;
+      join: (...parts: string[]) => string;
+    };
+    const os = globalWindow.require("os") as { homedir: () => string };
+
+    const appData =
+      globalWindow.process?.env?.APPDATA ??
+      path.join(os.homedir(), "AppData", "Roaming");
+    const prefsPath = path.join(appData, "Spotify", "prefs");
+    const prefsDir = path.dirname(prefsPath);
+
+    if (!fs.existsSync(prefsDir)) {
+      fs.mkdirSync(prefsDir, { recursive: true });
+    }
+
+    if (!fs.existsSync(prefsPath)) {
+      fs.writeFileSync(prefsPath, "app.enable-developer-mode=true\n", "utf8");
+      return;
+    }
+
+    const prefsContent = fs.readFileSync(prefsPath, "utf8");
+    if (prefsContent.includes("app.enable-developer-mode=true")) {
+      return;
+    }
+
+    if (/^app\.enable-developer-mode=.*$/m.test(prefsContent)) {
+      fs.writeFileSync(
+        prefsPath,
+        prefsContent.replace(
+          /^app\.enable-developer-mode=.*$/m,
+          "app.enable-developer-mode=true"
+        ),
+        "utf8"
+      );
+      return;
+    }
+
+    const separator =
+      prefsContent.length === 0 || prefsContent.endsWith("\n") ? "" : "\n";
+    fs.writeFileSync(
+      prefsPath,
+      `${prefsContent}${separator}app.enable-developer-mode=true\n`,
+      "utf8"
+    );
+  } catch {
+    // Best effort only. Spotify runtime environments vary.
+  }
+}
+
 function tryOpenDevtools() {
   const globalWindow = window as Window & {
     electron?: { webFrame?: { openDevTools?: () => unknown } };
@@ -273,6 +340,7 @@ function onToolKeydown(event: KeyboardEvent) {
 }
 
 export function startToolsController() {
+  ensureDeveloperModePersisted();
   tryOpenDevtools();
   restorePreviousSessionOnce();
   attachRestoreTracking();
