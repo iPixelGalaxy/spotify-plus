@@ -91,6 +91,30 @@ function Get-LatestReleaseAssetUrl {
     return $asset.browser_download_url
 }
 
+function Enable-SpotifyDeveloperMode {
+    $prefsPath = Join-Path $env:APPDATA "Spotify\prefs"
+    $prefsDirectory = Split-Path -Parent $prefsPath
+
+    if (-not (Test-Path $prefsDirectory)) {
+        New-Item -ItemType Directory -Path $prefsDirectory -Force | Out-Null
+    }
+
+    if (-not (Test-Path $prefsPath)) {
+        Set-Content -Path $prefsPath -Value "app.enable-developer-mode=true"
+        return
+    }
+
+    $prefsContent = Get-Content $prefsPath -Raw
+    if ($prefsContent -match "(?m)^app\.enable-developer-mode=") {
+        $updated = $prefsContent -replace "(?m)^app\.enable-developer-mode=.*$", "app.enable-developer-mode=true"
+        Set-Content -Path $prefsPath -Value $updated
+        return
+    }
+
+    $separator = if ($prefsContent.EndsWith("`n") -or [string]::IsNullOrEmpty($prefsContent)) { "" } else { [Environment]::NewLine }
+    Set-Content -Path $prefsPath -Value ($prefsContent + $separator + "app.enable-developer-mode=true")
+}
+
 Show-InstallWarning
 if (-not (Confirm-Install)) {
     Write-Host "Install cancelled."
@@ -115,8 +139,13 @@ Invoke-WebRequest -UseBasicParsing -Uri $downloadUrl -OutFile $destination
 Write-Host "Registering extension in Spicetify config..."
 & $spicetifyExe config extensions "$AssetName-" extensions $AssetName | Out-Null
 
+Write-Host "Enabling Spotify developer tools..."
+& $spicetifyExe enable-devtools | Out-Null
+Enable-SpotifyDeveloperMode
+
 Write-Host "Applying Spicetify changes..."
 & $spicetifyExe backup apply
+& $spicetifyExe apply
 
 Write-Host ""
 Write-Host "Spotify Plus installed successfully."
