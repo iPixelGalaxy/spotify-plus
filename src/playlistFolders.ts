@@ -98,7 +98,7 @@ function collectDirectPlaylistCandidates(
 }
 
 async function filterAddablePlaylists(candidates: PlaylistCandidate[]) {
-  const playlistApi = (Spicetify.Platform as any)?.PlaylistAPI;
+  const playlistApi = Spicetify.Platform?.PlaylistAPI;
   const results: Array<PlaylistFolderPlaylistEntry | null> = Array.from(
     { length: candidates.length },
     () => null
@@ -190,7 +190,7 @@ async function traverseFolderNodes(
 }
 
 async function scanPlaylistFoldersFromApi(): Promise<PlaylistFolderEntry[]> {
-  const rootlistApi = (Spicetify.Platform as any)?.RootlistAPI;
+  const rootlistApi = Spicetify.Platform?.RootlistAPI;
   if (!rootlistApi) return [];
 
   const candidateCalls = [

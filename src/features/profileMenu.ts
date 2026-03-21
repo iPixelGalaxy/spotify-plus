@@ -8,8 +8,6 @@ import {
   openUpdatePrompt,
 } from "./updatePrompt";
 
-const PROFILE_MENU_STYLE_ID = "spotify-plus-profile-menu-style";
-
 const menuItemSettings: Array<{
   label: string;
   key: keyof Pick<
@@ -152,47 +150,6 @@ function createUpdateMenuItem() {
 
   item.appendChild(button);
   return item;
-}
-
-function ensureProfileMenuStyles() {
-  if (document.getElementById(PROFILE_MENU_STYLE_ID)) {
-    return;
-  }
-
-  const style = document.createElement("style");
-  style.id = PROFILE_MENU_STYLE_ID;
-  style.textContent = `
-.spotify-plus-profile-menu-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.spotify-plus-profile-avatar-anchor {
-  position: relative !important;
-}
-
-.spotify-plus-profile-avatar-figure {
-  position: relative !important;
-}
-
-.spotify-plus-profile-avatar-update-dot {
-  color: var(--text-bright-accent, #3d91f4);
-  position: absolute;
-  top: -1px;
-  right: -1px;
-  width: 14px;
-  height: 14px;
-  pointer-events: none;
-  z-index: 2;
-}
-
-.spotify-plus-profile-avatar-update-dot[hidden] {
-  display: none;
-}
-`;
-
-  document.head.appendChild(style);
 }
 
 function injectSpotifyPlusMenuItem(menu: HTMLElement) {
@@ -362,7 +319,6 @@ function applyProfileMenuCleanup() {
 }
 
 export function startProfileMenuController() {
-  ensureProfileMenuStyles();
   applyProfileMenuCleanup();
   syncSpotifyPlusUpdateIndicators();
 

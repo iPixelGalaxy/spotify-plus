@@ -1,10 +1,7 @@
 import { normalizeText } from "../dom";
 
 const COPY_MENU_ICON_CLASS = "spotify-plus-copy-menu-icon";
-const COPY_MENU_STYLE_ID = "spotify-plus-copy-menu-style";
 const COPY_MENU_WRAPPER_CLASS = "spotify-plus-copy-menu-wrapper";
-const COPY_ICON_PATH =
-  "M5 1.25h4.55c1 0 1.8.8 1.8 1.8V4.1H9.9V3.2a.45.45 0 0 0-.45-.45H5.2a.45.45 0 0 0-.45.45v6.1c0 .25.2.45.45.45h.95v1.45H5A1.7 1.7 0 0 1 3.3 9.5V2.95c0-.94.76-1.7 1.7-1.7m3.35 3.55h3.7c.91 0 1.65.74 1.65 1.65v6.25c0 .91-.74 1.65-1.65 1.65h-3.7c-.91 0-1.65-.74-1.65-1.65V6.45c0-.91.74-1.65 1.65-1.65m.1 1.4a.35.35 0 0 0-.35.35v5.95c0 .19.16.35.35.35h3.5a.35.35 0 0 0 .35-.35V6.55a.35.35 0 0 0-.35-.35zm.8 1.35h2.4V8.7h-2.4zm0 1.9h2.4V10.6h-2.4z";
 const COPY_SONG_ARTIST_ICON_PATH =
   '<path fill="currentColor" d="M11.6 2.95A4.28 4.28 0 0 0 7.56.05a4.28 4.28 0 0 0-4.03 2.9A5.1 5.1 0 0 0 3.3 4.8c.05 1.26.5 2.42 1.33 3.37l.13.16c.2.24.14.6-.13.76L2.5 10.32A4.65 4.65 0 0 0 0 14.4V16h8.35v-1.4H1.5v-.2c0-1.17.62-2.24 1.64-2.82l2.14-1.22a2.13 2.13 0 0 0 .56-3.2l-.12-.15A3.66 3.66 0 0 1 4.8 4.74c.02-.42.1-.82.23-1.2a2.73 2.73 0 0 1 1.5-1.63 2.8 2.8 0 0 1 3.17.66c.25.28.44.6.56.96.12.4.16.82.14 1.24-.05.88-.39 1.7-.95 2.34l-.13.16a2.13 2.13 0 0 0-.34 2.33 3.85 3.85 0 0 1 1.05-.76 3.55 3.55 0 0 1 .46-2.02l.12-.15a5.2 5.2 0 0 0 1.31-3.2 5.1 5.1 0 0 0-.2-1.75m.56 7.83.83-.83a1.9 1.9 0 0 1 2.68 2.68l-.92.92-.98-.98.92-.92a.5.5 0 0 0-.7-.71l-.83.83zm-2.98 2.98.92-.92.98.98-.83.83a.5.5 0 1 0 .7.71l.83-.83.98.98-.92.92a1.9 1.9 0 1 1-2.68-2.68m1.13-1.85.98-.98 2.73 2.73-.98.98z"></path>';
 const COPY_LABELS = new Set(["copy", "copy ids"]);
@@ -130,40 +127,6 @@ async function copyTrackIds(uris: string[]) {
   );
 }
 
-function ensureCopyMenuStyles() {
-  if (document.getElementById(COPY_MENU_STYLE_ID)) {
-    return;
-  }
-
-  const style = document.createElement("style");
-  style.id = COPY_MENU_STYLE_ID;
-  style.textContent = `
-.${COPY_MENU_WRAPPER_CLASS} {
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 10px !important;
-}
-
-.${COPY_MENU_WRAPPER_CLASS}::before {
-  content: "";
-  width: calc(var(--encore-graphic-size-decorative-smaller) + 3px);
-  height: calc(var(--encore-graphic-size-decorative-smaller) + 3px);
-  flex: 0 0 calc(var(--encore-graphic-size-decorative-smaller) + 3px);
-  background-color: var(--text-subdued, #656565);
-  -webkit-mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  -webkit-mask-size: 100% 100%;
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='${COPY_ICON_PATH}'/%3E%3C/svg%3E");
-}
-
-.main-contextMenu-menu [data-encore-id="icon"] {
-  color: var(--text-subdued, #656565);
-}
-`;
-
-  document.head.appendChild(style);
-}
-
 function getItemLabel(item: HTMLElement) {
   const labelElement = item.querySelector<HTMLElement>(
     ".main-contextMenu-menuItemLabel, [data-encore-id='text'], [data-encore-id='type'], .TypeElement-type-mesto"
@@ -252,8 +215,6 @@ function scheduleCopyMenuSync() {
 }
 
 export function startCopyMenuController() {
-  ensureCopyMenuStyles();
-
   const copySongArtistItem = new Spicetify.ContextMenu.Item(
     "Copy Song & Artist Name",
     (uris: string[]) => {

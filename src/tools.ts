@@ -42,106 +42,10 @@ const RESTORE_RETRY_MAX_ATTEMPTS = 20;
 const DEVTOOLS_RETRY_INTERVAL_MS = 1000;
 const DEVTOOLS_RETRY_MAX_ATTEMPTS = 20;
 
-function ensureDeveloperModePersisted() {
-  const globalWindow = window as Window & {
-    require?: (id: string) => unknown;
-    process?: { env?: Record<string, string | undefined> };
-  };
-
-  if (typeof globalWindow.require !== "function") {
-    return;
-  }
-
-  try {
-    const fs = globalWindow.require("fs") as {
-      existsSync: (path: string) => boolean;
-      mkdirSync: (path: string, options?: { recursive?: boolean }) => void;
-      readFileSync: (path: string, encoding: string) => string;
-      writeFileSync: (path: string, data: string, encoding: string) => void;
-    };
-    const path = globalWindow.require("path") as {
-      dirname: (path: string) => string;
-      join: (...parts: string[]) => string;
-    };
-    const os = globalWindow.require("os") as { homedir: () => string };
-
-    const appData =
-      globalWindow.process?.env?.APPDATA ??
-      path.join(os.homedir(), "AppData", "Roaming");
-    const prefsPath = path.join(appData, "Spotify", "prefs");
-    const prefsDir = path.dirname(prefsPath);
-
-    if (!fs.existsSync(prefsDir)) {
-      fs.mkdirSync(prefsDir, { recursive: true });
-    }
-
-    if (!fs.existsSync(prefsPath)) {
-      fs.writeFileSync(prefsPath, "app.enable-developer-mode=true\n", "utf8");
-      return;
-    }
-
-    const prefsContent = fs.readFileSync(prefsPath, "utf8");
-    if (prefsContent.includes("app.enable-developer-mode=true")) {
-      return;
-    }
-
-    if (/^app\.enable-developer-mode=.*$/m.test(prefsContent)) {
-      fs.writeFileSync(
-        prefsPath,
-        prefsContent.replace(
-          /^app\.enable-developer-mode=.*$/m,
-          "app.enable-developer-mode=true"
-        ),
-        "utf8"
-      );
-      return;
-    }
-
-    const separator =
-      prefsContent.length === 0 || prefsContent.endsWith("\n") ? "" : "\n";
-    fs.writeFileSync(
-      prefsPath,
-      `${prefsContent}${separator}app.enable-developer-mode=true\n`,
-      "utf8"
-    );
-  } catch {
-    // Best effort only. Spotify runtime environments vary.
-  }
-}
-
 function tryOpenDevtools() {
   const globalWindow = window as Window & {
     electron?: { webFrame?: { openDevTools?: () => unknown } };
-    require?: (id: string) => unknown;
   };
-
-  const tryRequire = (id: string) => {
-    try {
-      return typeof globalWindow.require === "function" ? globalWindow.require(id) : null;
-    } catch {
-      return null;
-    }
-  };
-
-  const electronModule = tryRequire("electron") as
-    | {
-        webFrame?: { openDevTools?: () => unknown };
-        remote?: {
-          getCurrentWebContents?: () => { openDevTools?: (options?: unknown) => unknown };
-          getCurrentWindow?: () => {
-            webContents?: { openDevTools?: (options?: unknown) => unknown };
-          };
-        };
-      }
-    | null;
-  const electronRemoteModule = tryRequire("@electron/remote") as
-    | {
-        getCurrentWebContents?: () => { openDevTools?: (options?: unknown) => unknown };
-        getCurrentWindow?: () => {
-          webContents?: { openDevTools?: (options?: unknown) => unknown };
-        };
-      }
-    | null;
 
   const candidates = [
     Spicetify.Platform?.PlatformClientAPI?.openDevTools,
@@ -157,11 +61,6 @@ function tryOpenDevtools() {
     Spicetify.Platform?.NativeAPI?.showDevTools,
     Spicetify.Platform?.NativeAPI?.showDeveloperTools,
     globalWindow.electron?.webFrame?.openDevTools,
-    electronModule?.webFrame?.openDevTools,
-    () => electronModule?.remote?.getCurrentWebContents?.()?.openDevTools?.({ mode: "detach" }),
-    () => electronModule?.remote?.getCurrentWindow?.()?.webContents?.openDevTools?.({ mode: "detach" }),
-    () => electronRemoteModule?.getCurrentWebContents?.()?.openDevTools?.({ mode: "detach" }),
-    () => electronRemoteModule?.getCurrentWindow?.()?.webContents?.openDevTools?.({ mode: "detach" }),
   ].filter((candidate): candidate is () => unknown => typeof candidate === "function");
 
   for (const candidate of candidates) {
@@ -391,7 +290,6 @@ export function startToolsController() {
   const settings = getSettings();
 
   if (settings.enableDevtoolsOnStartup) {
-    ensureDeveloperModePersisted();
     resetDevtoolsRetryState();
     if (!tryOpenDevtools()) {
       scheduleDevtoolsRetry();
@@ -416,7 +314,6 @@ export function startToolsController() {
 
     const updatedSettings = getSettings();
     if (updatedSettings.enableDevtoolsOnStartup) {
-      ensureDeveloperModePersisted();
       resetDevtoolsRetryState();
       if (!tryOpenDevtools()) {
         scheduleDevtoolsRetry();

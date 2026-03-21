@@ -1,0 +1,826 @@
+.spotify-plus-copy-menu-wrapper {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.spotify-plus-copy-menu-wrapper::before {
+  content: "";
+  width: calc(var(--encore-graphic-size-decorative-smaller) + 3px);
+  height: calc(var(--encore-graphic-size-decorative-smaller) + 3px);
+  flex: 0 0 calc(var(--encore-graphic-size-decorative-smaller) + 3px);
+  background-color: var(--text-subdued, #656565);
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  -webkit-mask-size: 100% 100%;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M5 1.25h4.55c1 0 1.8.8 1.8 1.8V4.1H9.9V3.2a.45.45 0 0 0-.45-.45H5.2a.45.45 0 0 0-.45.45v6.1c0 .25.2.45.45.45h.95v1.45H5A1.7 1.7 0 0 1 3.3 9.5V2.95c0-.94.76-1.7 1.7-1.7m3.35 3.55h3.7c.91 0 1.65.74 1.65 1.65v6.25c0 .91-.74 1.65-1.65 1.65h-3.7c-.91 0-1.65-.74-1.65-1.65V6.45c0-.91.74-1.65 1.65-1.65m.1 1.4a.35.35 0 0 0-.35.35v5.95c0 .19.16.35.35.35h3.5a.35.35 0 0 0 .35-.35V6.55a.35.35 0 0 0-.35-.35zm.8 1.35h2.4V8.7h-2.4zm0 1.9h2.4V10.6h-2.4z'/%3E%3C/svg%3E");
+}
+
+.main-contextMenu-menu [data-encore-id="icon"] {
+  color: var(--text-subdued, #656565);
+}
+
+.main-contextMenu-menu.spotify-plus-custom-playlist-root {
+  position: relative !important;
+}
+
+.main-contextMenu-menu.spotify-plus-custom-playlist-root > .spotify-plus-custom-playlist-source {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.main-contextMenu-menu.spotify-plus-custom-playlist-root > .spotify-plus-custom-playlist-source * {
+  pointer-events: none !important;
+}
+
+.main-contextMenu-menu.spotify-plus-custom-playlist-root > .spotify-plus-custom-playlist-container {
+  position: relative !important;
+}
+
+.spotify-plus-profile-menu-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.spotify-plus-profile-avatar-anchor {
+  position: relative !important;
+}
+
+.spotify-plus-profile-avatar-figure {
+  position: relative !important;
+}
+
+.spotify-plus-profile-avatar-update-dot {
+  color: var(--text-bright-accent, #3d91f4);
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.spotify-plus-profile-avatar-update-dot[hidden] {
+  display: none;
+}
+
+.SpotifyPlusUpdateOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10001;
+  background: rgba(0, 0, 0, 0.58);
+}
+
+.SpotifyPlusUpdateDialog {
+  position: fixed;
+  z-index: 10002;
+  width: min(560px, calc(100vw - 48px));
+  background: #121212;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
+  color: #fff;
+  overflow: hidden;
+}
+
+.SpotifyPlusUpdateDialogHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px 12px;
+}
+
+.SpotifyPlusUpdateDialogTitle {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.SpotifyPlusUpdateDialogClose {
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.65);
+  cursor: pointer;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.SpotifyPlusUpdateDialogBody {
+  padding: 0 20px 20px;
+}
+
+.SpotifyPlusUpdateDialogBody p {
+  margin: 0 0 12px;
+  color: rgba(255, 255, 255, 0.82);
+  line-height: 1.45;
+}
+
+.SpotifyPlusUpdateDialogCommand {
+  margin: 14px 0 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.92);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.SpotifyPlusUpdateDialogActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.SpotifyPlusUpdateDialogButton {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.84rem;
+}
+
+.SpotifyPlusUpdateDialogButton:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.SpotifyPlusUpdateDialogButtonPrimary {
+  border-color: #1ed760;
+  background: #1ed760;
+  color: #000;
+  font-weight: 700;
+}
+
+.SpotifyPlusUpdateDialogButtonPrimary:hover {
+  background: rgba(30, 215, 96, 0.5);
+  border-color: rgba(30, 215, 96, 0.5);
+  color: #fff;
+}
+
+.SpotifyPlusSettingsOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.SpotifyPlusSettingsContainer {
+  position: fixed;
+  z-index: 9999;
+  background: #0e0e0e;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.7);
+}
+
+.SpotifyPlusSettingsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+.SpotifyPlusSettingsHeader span {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.01em;
+}
+
+.SpotifyPlusSettingsHeaderClose {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.SpotifyPlusSettingsHeaderClose:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.SpotifyPlusSettingsScroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 16px 16px;
+  overscroll-behavior: contain;
+}
+
+.SpotifyPlusSettingsScroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.SpotifyPlusSettingsScroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.SpotifyPlusSettingsScroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+}
+
+.sl-settings-group {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 20px;
+  margin-bottom: 4px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sl-settings-group:first-child {
+  margin-top: 8px;
+}
+
+.sl-settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 6px;
+  border-radius: 6px;
+}
+
+.sl-settings-row:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.sl-settings-row-stack {
+  align-items: stretch;
+  flex-direction: column;
+}
+
+.sl-settings-row-stack .sl-settings-label {
+  flex: 0 0 auto;
+}
+
+.sl-settings-label {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.85);
+  flex: 1;
+}
+
+.sl-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 20px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.sl-toggle input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  pointer-events: none;
+}
+
+.sl-toggle span {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  transition: background 0.15s ease;
+}
+
+.sl-toggle span::before {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  top: 3px;
+  left: 2px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.15s ease;
+}
+
+.sl-toggle input:checked + span {
+  background: #1ed760;
+}
+
+.sl-toggle input:checked + span::before {
+  transform: translateX(18px);
+}
+
+.sl-select,
+.sl-input,
+.sl-btn {
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.sl-select {
+  appearance: none;
+  padding: 6px 28px 6px 10px;
+  min-width: 220px;
+  cursor: pointer;
+}
+
+.sl-input {
+  padding: 6px 10px;
+  min-width: 220px;
+}
+
+.sl-btn {
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.sl-btn:hover,
+.sl-select:hover {
+  background: rgba(255, 255, 255, 0.13);
+}
+
+.sl-btn.is-muted {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  border-color: rgba(255, 255, 255, 0.08);
+  cursor: default;
+}
+
+.sl-btn.is-muted:hover {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.9);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.sl-folderChecklist {
+  width: 100%;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.sl-folderChecklist.is-disabled {
+  opacity: 0.45;
+}
+
+.sl-folderChecklistEmpty {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.55);
+  padding: 6px 4px;
+}
+
+.sl-folderOption {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 4px;
+  border-radius: 6px;
+}
+
+.sl-folderOption:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.sl-folderOption input {
+  margin: 0;
+}
+
+.sl-folderOptionText {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.SpotifyPlusExperimentalFeaturesOverlay {
+  background:
+    radial-gradient(circle at top left, rgba(30, 215, 96, 0.08), transparent 32%),
+    rgba(2, 6, 12, 0.58);
+}
+
+.SpotifyPlusExperimentalFeaturesDialog {
+  width: min(680px, calc(100vw - 224px));
+  max-width: 680px;
+  max-height: calc(100vh - 160px);
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 18%),
+    linear-gradient(135deg, rgba(10, 18, 28, 0.98), rgba(9, 13, 18, 0.96));
+  box-shadow:
+    0 28px 90px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.SpotifyPlusExperimentalFeaturesDialog .main-embedWidgetGenerator-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 680px;
+  max-width: 100%;
+  height: min(762px, calc(100vh - 160px));
+}
+
+.SpotifyPlusExperimentalFeaturesDialog .main-trackCreditsModal-header {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+  padding: 22px 22px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0));
+}
+
+.SpotifyPlusExperimentalFeaturesDialog .SpotifyPlusExperimentalFeaturesHeaderTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.SpotifyPlusExperimentalFeaturesDialog .main-trackCreditsModal-header h1 {
+  margin: 0;
+  font-size: clamp(1.5rem, 2vw, 1.9rem);
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #f7fbff;
+}
+
+.SpotifyPlusExperimentalFeaturesDialog .main-trackCreditsModal-closeBtn {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.74);
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease,
+    transform 120ms ease;
+}
+
+.SpotifyPlusExperimentalFeaturesDialog .main-trackCreditsModal-closeBtn:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  transform: scale(1.03);
+}
+
+.SpotifyPlusExperimentalFeaturesDialog .SpotifyPlusExperimentalFeaturesHeaderSearch {
+  position: relative;
+  width: 100%;
+  display: block;
+}
+
+.SpotifyPlusExperimentalFeaturesDialog .SpotifyPlusExperimentalFeaturesHeaderSearch .search-container {
+  position: relative;
+  width: 100%;
+}
+
+.SpotifyPlusExperimentalFeaturesDialog .SpotifyPlusExperimentalFeaturesHeaderSearch .search-container > svg {
+  position: absolute;
+  left: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255, 255, 255, 0.45);
+  pointer-events: none;
+  z-index: 1;
+  margin: 0;
+  display: block;
+}
+
+.SpotifyPlusExperimentalFeaturesDialog .SpotifyPlusExperimentalFeaturesHeaderSearch input.search {
+  display: block;
+  width: 100%;
+  height: 46px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.025));
+  color: #f3f7fb;
+  font-size: 0.92rem;
+  letter-spacing: -0.01em;
+  padding: 0 16px 0 46px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
+
+.SpotifyPlusExperimentalFeaturesDialog .SpotifyPlusExperimentalFeaturesHeaderSearch input.search::placeholder {
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.SpotifyPlusExperimentalFeaturesDialog .SpotifyPlusExperimentalFeaturesHeaderSearch input.search:focus {
+  outline: none;
+  border-color: rgba(30, 215, 96, 0.55);
+  box-shadow:
+    0 0 0 3px rgba(30, 215, 96, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
+
+.SpotifyPlusExperimentalFeaturesDialog .main-trackCreditsModal-mainSection {
+  min-height: 0;
+  flex: 1;
+  padding: 0;
+  overflow: hidden;
+}
+
+.SpotifyPlusExperimentalFeaturesDialog .main-trackCreditsModal-originalCredits {
+  height: 100%;
+  overflow: hidden;
+}
+
+.SpotifyPlusExperimentalFeaturesRoot {
+  height: 100%;
+  overflow: auto;
+  width: 100%;
+  padding: 14px 0 22px 20px;
+  max-width: none;
+  margin: 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+.SpotifyPlusExperimentalFeaturesRoot::-webkit-scrollbar {
+  width: 8px;
+}
+
+.SpotifyPlusExperimentalFeaturesRoot::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.SpotifyPlusExperimentalFeaturesRoot::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.SpotifyPlusExperimentalFeaturesRoot .setting-row {
+  position: relative;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  margin: 0;
+  padding: 13px 14px;
+  width: calc(100% - 20px);
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.02));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    transform 120ms ease;
+}
+
+.SpotifyPlusExperimentalFeaturesRoot .setting-row.SpotifyPlusExperimentalFeaturesHidden {
+  display: none !important;
+}
+
+.SpotifyPlusExperimentalFeaturesRoot .setting-row + .setting-row {
+  margin-top: 12px;
+}
+
+.SpotifyPlusExperimentalFeaturesRoot .setting-row:hover {
+  border-color: rgba(255, 255, 255, 0.13);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.028));
+  transform: translateY(-1px);
+}
+
+.SpotifyPlusExperimentalFeaturesRoot .setting-row .col {
+  padding: 0;
+}
+
+.SpotifyPlusExperimentalFeaturesRoot .setting-row .col.description {
+  float: none;
+  width: auto !important;
+  min-width: 0;
+  padding: 0 !important;
+}
+
+.SpotifyPlusExperimentalFeaturesRoot .setting-row .col.action {
+  float: none;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: max-content;
+  padding: 0 !important;
+}
+
+.SpotifyPlusExperimentalFeaturesRoot .setting-row label.col.description {
+  color: rgba(247, 251, 255, 0.9);
+  font-size: 0.92rem;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+}
+
+.SpotifyPlusExperimentalFeaturesRoot .setting-row.is-search {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  overflow: hidden !important;
+}
+
+.SpotifyPlusExperimentalFeaturesRoot button.switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 20px;
+  margin-inline-start: 0;
+  padding: 0;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  transition: transform 120ms ease;
+}
+
+.SpotifyPlusExperimentalFeaturesRoot button.switch::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.15);
+  transition: background 120ms ease;
+}
+
+.SpotifyPlusExperimentalFeaturesRoot button.switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.24);
+  transition: transform 120ms ease;
+}
+
+.SpotifyPlusExperimentalFeaturesRoot button.switch svg {
+  display: none;
+}
+
+.SpotifyPlusExperimentalFeaturesRoot .setting-row.is-switch .col.action {
+  min-width: 36px;
+}
+
+.SpotifyPlusExperimentalFeaturesRoot .setting-row.is-switch button.switch:not(.disabled):not([disabled]) {
+  background: transparent;
+}
+
+.SpotifyPlusExperimentalFeaturesRoot .setting-row.is-switch button.switch:not(.disabled):not([disabled])::before {
+  background: #1ed760;
+}
+
+.SpotifyPlusExperimentalFeaturesRoot .setting-row.is-switch button.switch:not(.disabled):not([disabled])::after {
+  transform: translateX(14px);
+}
+
+.SpotifyPlusExperimentalFeaturesRoot button.switch.disabled,
+.SpotifyPlusExperimentalFeaturesRoot button.switch[disabled] {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.SpotifyPlusExperimentalFeaturesRoot .setting-row.is-switch button.switch.disabled::before,
+.SpotifyPlusExperimentalFeaturesRoot .setting-row.is-switch button.switch[disabled]::before {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.SpotifyPlusExperimentalFeaturesRoot .setting-row.is-switch button.switch.disabled::after,
+.SpotifyPlusExperimentalFeaturesRoot .setting-row.is-switch button.switch[disabled]::after {
+  transform: translateX(0);
+}
+
+.SpotifyPlusExperimentalFeaturesRoot button.switch:hover,
+.SpotifyPlusExperimentalFeaturesRoot .reset:hover,
+.SpotifyPlusExperimentalFeaturesRoot .dropdown:hover {
+  transform: translateY(-1px);
+}
+
+.SpotifyPlusExperimentalFeaturesRoot .dropdown,
+.SpotifyPlusExperimentalFeaturesRoot .reset {
+  min-height: 38px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.03));
+  color: rgba(247, 251, 255, 0.92);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
+
+.SpotifyPlusExperimentalFeaturesRoot .dropdown {
+  min-width: 148px;
+  padding: 0 36px 0 14px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(255, 255, 255, 0.62) 50%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.62) 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) calc(50% - 1px),
+    calc(100% - 13px) calc(50% - 1px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.SpotifyPlusExperimentalFeaturesRoot .dropdown:focus,
+.SpotifyPlusExperimentalFeaturesRoot .reset:focus {
+  outline: none;
+  border-color: rgba(30, 215, 96, 0.55);
+  box-shadow: 0 0 0 3px rgba(30, 215, 96, 0.12);
+}
+
+.SpotifyPlusExperimentalFeaturesRoot .reset {
+  padding-inline: 16px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+@media (max-width: 760px) {
+  .SpotifyPlusExperimentalFeaturesDialog {
+    width: calc(100vw - 48px);
+    max-height: calc(100vh - 48px);
+    border-radius: 18px;
+  }
+
+  .SpotifyPlusExperimentalFeaturesDialog .main-embedWidgetGenerator-container {
+    height: calc(100vh - 48px);
+  }
+
+  .SpotifyPlusExperimentalFeaturesDialog .main-trackCreditsModal-header {
+    padding: 18px 18px 14px;
+  }
+
+  .SpotifyPlusExperimentalFeaturesRoot {
+    padding: 12px 12px 18px;
+    max-width: none;
+  }
+
+  .SpotifyPlusExperimentalFeaturesRoot .setting-row {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .SpotifyPlusExperimentalFeaturesRoot .setting-row .col.action {
+    justify-content: flex-start;
+  }
+
+  .SpotifyPlusExperimentalFeaturesDialog .SpotifyPlusExperimentalFeaturesHeaderTop {
+    align-items: flex-start;
+  }
+}

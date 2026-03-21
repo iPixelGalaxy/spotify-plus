@@ -3,7 +3,6 @@ import { CURRENT_VERSION } from "../version";
 const UPDATE_CHECK_CACHE_KEY_PREFIX = "spotify-plus.update-check-cache";
 const UPDATE_DISMISSED_VERSION_KEY = "spotify-plus.update-dismissed-version";
 const VERSION_OVERRIDE_KEY = "spotify-plus.debug-version-override";
-const UPDATE_STYLE_ID = "spotify-plus-update-prompt-style";
 const UPDATE_DIALOG_CLASS = "SpotifyPlusUpdateDialog";
 const UPDATE_OVERLAY_CLASS = "SpotifyPlusUpdateOverlay";
 const UPDATE_CHECK_INTERVAL_MS = 1000 * 60 * 60 * 12;
@@ -18,116 +17,10 @@ type LatestRelease = {
   htmlUrl: string;
 };
 
-function ensureUpdatePromptStyles() {
-  if (document.getElementById(UPDATE_STYLE_ID)) {
-    return;
-  }
-
-  const style = document.createElement("style");
-  style.id = UPDATE_STYLE_ID;
-  style.textContent = `
-.${UPDATE_OVERLAY_CLASS} {
-  position: fixed;
-  inset: 0;
-  z-index: 10001;
-  background: rgba(0, 0, 0, 0.58);
-}
-
-.${UPDATE_DIALOG_CLASS} {
-  position: fixed;
-  z-index: 10002;
-  width: min(560px, calc(100vw - 48px));
-  background: #121212;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 14px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
-  color: #fff;
-  overflow: hidden;
-}
-
-.${UPDATE_DIALOG_CLASS}Header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 18px 20px 12px;
-}
-
-.${UPDATE_DIALOG_CLASS}Title {
-  font-size: 1rem;
-  font-weight: 700;
-}
-
-.${UPDATE_DIALOG_CLASS}Close {
-  border: 0;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.65);
-  cursor: pointer;
-  font-size: 1.2rem;
-  line-height: 1;
-}
-
-.${UPDATE_DIALOG_CLASS}Body {
-  padding: 0 20px 20px;
-}
-
-.${UPDATE_DIALOG_CLASS}Body p {
-  margin: 0 0 12px;
-  color: rgba(255, 255, 255, 0.82);
-  line-height: 1.45;
-}
-
-.${UPDATE_DIALOG_CLASS}Command {
-  margin: 14px 0 16px;
-  padding: 12px 14px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.92);
-  font-family: Consolas, "Courier New", monospace;
-  font-size: 0.8rem;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.${UPDATE_DIALOG_CLASS}Actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-}
-
-.${UPDATE_DIALOG_CLASS}Button {
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
-  padding: 8px 14px;
-  border-radius: 999px;
-  cursor: pointer;
-  font-size: 0.84rem;
-}
-
-.${UPDATE_DIALOG_CLASS}Button:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-}
-
-.${UPDATE_DIALOG_CLASS}ButtonPrimary {
-  border-color: #1ed760;
-  background: #1ed760;
-  color: #000;
-  font-weight: 700;
-}
-
-.${UPDATE_DIALOG_CLASS}ButtonPrimary:hover {
-  background: rgba(30, 215, 96, 0.5);
-  border-color: rgba(30, 215, 96, 0.5);
-  color: #fff;
-}
-`;
-
-  document.head.appendChild(style);
-}
+type GithubLatestReleaseResponse = {
+  tag_name?: string;
+  html_url?: string;
+};
 
 function parseVersionParts(version: string) {
   return version
@@ -152,29 +45,10 @@ function isVersionNewer(latestVersion: string, currentVersion: string) {
 }
 
 function getPlatform() {
-  const globalWindow = window as Window & {
-    require?: (id: string) => unknown;
-    process?: { platform?: string };
-    navigator?: Navigator & {
-      userAgentData?: { platform?: string };
-      userAgent?: string;
-      platform?: string;
-    };
-  };
-
-  const runtimePlatform =
-    globalWindow.process?.platform ??
-    (typeof globalWindow.require === "function"
-      ? ((globalWindow.require("process") as { platform?: string })?.platform ?? "")
-      : "");
-  if (typeof runtimePlatform === "string" && runtimePlatform) {
-    return runtimePlatform;
-  }
-
   const navigatorPlatform =
-    globalWindow.navigator?.userAgentData?.platform ??
-    globalWindow.navigator?.platform ??
-    globalWindow.navigator?.userAgent ??
+    navigator.userAgentData?.platform ??
+    navigator.platform ??
+    navigator.userAgent ??
     "";
   const normalizedNavigatorPlatform =
     typeof navigatorPlatform === "string" ? navigatorPlatform.toLowerCase() : "";
@@ -250,7 +124,6 @@ export function openUpdatePrompt(release: LatestRelease | null = availableReleas
   }
 
   closeExistingPrompt();
-  ensureUpdatePromptStyles();
 
   const overlay = document.createElement("div");
   overlay.className = UPDATE_OVERLAY_CLASS;
@@ -346,7 +219,7 @@ async function fetchLatestRelease() {
     throw new Error(`Update check failed with ${response.status}`);
   }
 
-  const release = (await response.json()) as { tag_name?: string; html_url?: string };
+  const release: GithubLatestReleaseResponse = await response.json();
   if (!release.tag_name || !release.html_url) {
     throw new Error("Latest release payload was incomplete");
   }

@@ -1,3 +1,4 @@
+import "../styles.css";
 import { startExperimentalFeaturesController } from "./experimentalFeatures";
 import { startCopyMenuController } from "./copyMenu";
 import { startPlayerControlsController } from "./playerControls";

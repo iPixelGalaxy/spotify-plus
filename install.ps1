@@ -23,14 +23,7 @@ function Write-Muted([string]$Text) {
 
 function Show-InstallWarning {
     Write-Host ""
-    Write-Warn "WARNING: Spotify Plus enables persistent client behaviors that uninstalling the extension will not automatically undo."
-    Write-Host ""
-    Write-Warn "This can leave behind:"
-    Write-Host " - Spotify developer tools staying enabled"
-    Write-Host " - F5 reload behavior remaining available"
-    Write-Host " - remembered last-view route/session state across Spotify restarts"
-    Write-Host ""
-    Write-Host "To fully clear that client state later, fully close Spotify and run:" -ForegroundColor Yellow
+    Write-Host "To fully clear Spotify Plus client state later, fully close Spotify and run:" -ForegroundColor Yellow
     Write-Host ""
     Write-Muted '(Get-Content "$env:APPDATA\Spotify\prefs") `'
     Write-Muted '  -replace ''(?m)^app\.enable-developer-mode=.*$'', ''app.enable-developer-mode=false'' `'
@@ -39,7 +32,12 @@ function Show-InstallWarning {
     Write-Muted 'Remove-Item -Recurse -Force "$env:LOCALAPPDATA\Spotify\Default\Sessions" -ErrorAction SilentlyContinue'
     Write-Muted 'Remove-Item -Recurse -Force "$env:LOCALAPPDATA\Spotify\Default\Session Storage" -ErrorAction SilentlyContinue'
     Write-Host ""
-    Write-Host "That reset can also clear Spotify client preferences and session/UI state." -ForegroundColor Yellow
+    Write-Warn "WARNING: uninstalling Spotify Plus alone will not automatically undo these persistent client changes:"
+    Write-Host " - Spotify developer tools staying enabled"
+    Write-Host " - F5 reload behavior remaining available"
+    Write-Host " - remembered last-view route/session state across Spotify restarts"
+    Write-Host ""
+    Write-Warn "WARNING: running the reset commands above can also clear Spotify client preferences and session/UI state."
     Write-Host ""
 }
 
@@ -97,7 +95,7 @@ function Ensure-Spicetify {
     return $spicetifyExe
 }
 
-function Get-LatestReleaseAssetUrl {
+function Get-LatestReleaseAssetInfo {
     $release = Invoke-RestMethod -Headers @{ "User-Agent" = "spotify-plus-installer" } -Uri "https://api.github.com/repos/$RepoOwner/$RepoName/releases/latest"
     $asset = $release.assets | Where-Object { $_.name -eq $AssetName } | Select-Object -First 1
 
@@ -105,7 +103,10 @@ function Get-LatestReleaseAssetUrl {
         throw "Latest release does not contain asset '$AssetName'."
     }
 
-    return $asset.browser_download_url
+    return @{
+        Version = ($release.tag_name -replace '^v', '')
+        DownloadUrl = $asset.browser_download_url
+    }
 }
 
 function Enable-SpotifyDeveloperMode {
@@ -147,10 +148,12 @@ if (-not $extensionsRoot) {
 
 New-Item -ItemType Directory -Path $extensionsRoot -Force | Out-Null
 
-$downloadUrl = Get-LatestReleaseAssetUrl
+$releaseInfo = Get-LatestReleaseAssetInfo
+$downloadUrl = $releaseInfo.DownloadUrl
 $destination = Join-Path $extensionsRoot $AssetName
 
 Write-Section "Download"
+Write-Step "Installing Spotify Plus v$($releaseInfo.Version)"
 Write-Step "Downloading $AssetName from latest release..."
 Invoke-WebRequest -UseBasicParsing -Uri $downloadUrl -OutFile $destination
 
@@ -167,7 +170,7 @@ Write-Step "Applying Spicetify changes..."
 & $spicetifyExe apply
 
 Write-Section "Done"
-Write-Step "Spotify Plus installed successfully."
+Write-Step "Spotify Plus v$($releaseInfo.Version) installed successfully."
 Write-Muted "Extension path: $destination"
 Write-Muted "Uninstall later with:"
 Write-Muted "irm https://raw.githubusercontent.com/$RepoOwner/$RepoName/master/uninstall.ps1 | iex"

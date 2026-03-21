@@ -12,6 +12,11 @@ on:
         description: Version number without the v prefix
         required: true
         type: string
+      release_notes:
+        description: Optional release notes body to publish instead of auto-generated notes
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: write
@@ -63,7 +68,8 @@ jobs:
         with:
           tag_name: v${{ inputs.version }}
           name: v${{ inputs.version }}
-          generate_release_notes: true
+          body: ${{ inputs.release_notes }}
+          generate_release_notes: ${{ inputs.release_notes == '' }}
           files: |
             dist/spotify-plus.js
             spotify-plus-v${{ inputs.version }}.zip

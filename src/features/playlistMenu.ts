@@ -9,7 +9,6 @@ import { isElementVisible, normalizeText } from "../dom";
 let observer: MutationObserver | null = null;
 let hasAppliedCleanup = false;
 
-const PLAYLIST_MENU_STYLE_ID = "spotify-plus-playlist-menu-style";
 const CUSTOM_ROOT_CLASS = "spotify-plus-custom-playlist-root";
 const CUSTOM_SOURCE_CLASS = "spotify-plus-custom-playlist-source";
 const CUSTOM_CONTAINER_CLASS = "spotify-plus-custom-playlist-container";
@@ -226,7 +225,7 @@ async function getPlaylistTrackUriSet(playlistUri: string) {
   const pending = (async () => {
     try {
       const items =
-        (await (Spicetify.Platform as any)?.PlaylistAPI?.getContents?.(playlistUri, {
+        (await Spicetify.Platform?.PlaylistAPI?.getContents?.(playlistUri, {
           limit: 100000,
         }))?.items ?? [];
 
@@ -323,7 +322,7 @@ async function isEligiblePlaylistUri(uri: string | null) {
 
   const pending = (async () => {
     try {
-      const metadata = await (Spicetify.Platform as any)?.PlaylistAPI?.getMetadata?.(uri);
+      const metadata = await Spicetify.Platform?.PlaylistAPI?.getMetadata?.(uri);
       if (!metadata) {
         return true;
       }
@@ -349,42 +348,6 @@ async function isEligiblePlaylistUri(uri: string | null) {
 
   playlistMetadataEligibilityCache.set(uri, pending);
   return pending;
-}
-
-function ensurePlaylistMenuStyles() {
-  if (document.getElementById(PLAYLIST_MENU_STYLE_ID)) return;
-
-  const style = document.createElement("style");
-  style.id = PLAYLIST_MENU_STYLE_ID;
-  style.textContent = `
-.main-contextMenu-menu.${CUSTOM_ROOT_CLASS} {
-  position: relative !important;
-}
-
-.main-contextMenu-menu.${CUSTOM_ROOT_CLASS} > .${CUSTOM_SOURCE_CLASS} {
-  position: absolute !important;
-  inset: 0 !important;
-  width: 0 !important;
-  height: 0 !important;
-  min-width: 0 !important;
-  min-height: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  overflow: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-
-.main-contextMenu-menu.${CUSTOM_ROOT_CLASS} > .${CUSTOM_SOURCE_CLASS} * {
-  pointer-events: none !important;
-}
-
-.main-contextMenu-menu.${CUSTOM_ROOT_CLASS} > .${CUSTOM_CONTAINER_CLASS} {
-  position: relative !important;
-}
-`;
-
-  document.head.appendChild(style);
 }
 
 function wait(ms: number) {
@@ -1086,7 +1049,7 @@ async function triggerNativeAction(state: CustomMenuState, node: ActionMenuNode)
           return;
         }
 
-        await (Spicetify.Platform as any)?.PlaylistAPI?.add?.(
+        await Spicetify.Platform?.PlaylistAPI?.add?.(
           node.playlistUri,
           trackUrisToAdd,
           {}
@@ -1299,8 +1262,6 @@ function ensureCustomMenuState(rootMenu: HTMLElement, folders: PlaylistFolderEnt
   if (folderSources.length === 0) {
     return null;
   }
-
-  ensurePlaylistMenuStyles();
 
   const customContainer = document.createElement("div");
   customContainer.className = `${sourceContainer.className} ${CUSTOM_CONTAINER_CLASS}`.trim();

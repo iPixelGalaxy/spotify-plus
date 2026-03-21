@@ -36,7 +36,11 @@ print_muted() {
 confirm_install() {
   local answer
   printf "\nContinue installing Spotify Plus? [y/N] "
-  read -r answer || true
+  if [ -r /dev/tty ]; then
+    read -r answer </dev/tty || true
+  else
+    read -r answer || true
+  fi
   case "${answer:-}" in
     y|Y|yes|YES) return 0 ;;
     *) return 1 ;;
@@ -44,14 +48,7 @@ confirm_install() {
 }
 
 show_warning() {
-  print_warn "WARNING: Spotify Plus enables persistent client behaviors that uninstalling the extension will not automatically undo."
-  printf "\n"
-  print_warn "This can leave behind:"
-  printf " - Spotify developer tools staying enabled\n"
-  printf " - F5 reload behavior remaining available\n"
-  printf " - remembered last-view route/session state across Spotify restarts\n"
-  printf "\n"
-  print_note "To fully clear that client state later, fully close Spotify and run:"
+  print_note "To fully clear Spotify Plus client state later, fully close Spotify and run:"
   printf "\n"
 
   case "$(uname -s)" in
@@ -84,7 +81,12 @@ show_warning() {
   esac
 
   printf "\n"
-  print_note "That reset can also clear Spotify client preferences and session/UI state."
+  print_warn "WARNING: uninstalling Spotify Plus alone will not automatically undo these persistent client changes:"
+  printf " - Spotify developer tools staying enabled\n"
+  printf " - F5 reload behavior remaining available\n"
+  printf " - remembered last-view route/session state across Spotify restarts\n"
+  printf "\n"
+  print_warn "WARNING: running the reset commands above can also clear Spotify client preferences and session/UI state."
 }
 
 get_spicetify() {
@@ -157,7 +159,7 @@ prefs.write_text(text)
 PY
 }
 
-get_latest_asset_url() {
+get_latest_release_info() {
   python3 <<PY
 import json
 import urllib.request
@@ -171,6 +173,7 @@ with urllib.request.urlopen(req) as response:
 
 for asset in release.get("assets", []):
     if asset.get("name") == "$ASSET_NAME":
+        print((release.get("tag_name") or "").lstrip("v"))
         print(asset["browser_download_url"])
         break
 else:
@@ -195,8 +198,11 @@ fi
 mkdir -p "$EXTENSIONS_ROOT"
 
 print_section "Download"
-ASSET_URL="$(get_latest_asset_url)"
+mapfile -t RELEASE_INFO < <(get_latest_release_info)
+RELEASE_VERSION="${RELEASE_INFO[0]}"
+ASSET_URL="${RELEASE_INFO[1]}"
 DESTINATION="$EXTENSIONS_ROOT/$ASSET_NAME"
+print_step "Installing Spotify Plus v$RELEASE_VERSION"
 print_step "Downloading $ASSET_NAME from the latest release..."
 curl -fsSL "$ASSET_URL" -o "$DESTINATION"
 
@@ -213,7 +219,7 @@ print_step "Applying Spicetify changes..."
 "$SPICETIFY_EXE" apply
 
 print_section "Done"
-print_step "Spotify Plus installed successfully."
+print_step "Spotify Plus v$RELEASE_VERSION installed successfully."
 print_muted "Extension path: $DESTINATION"
 print_muted "Uninstall later with:"
 print_muted "curl -fsSL https://raw.githubusercontent.com/$REPO_OWNER/$REPO_NAME/master/uninstall.sh | bash"
