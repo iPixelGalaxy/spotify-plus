@@ -25,6 +25,8 @@ function Show-InstallWarning {
     Write-Host ""
     Write-Host "To fully clear Spotify Plus client state later, fully close Spotify and run:" -ForegroundColor Yellow
     Write-Host ""
+    Write-Warn "WARNING: running the reset commands below can also clear Spotify client preferences and session/UI state."
+    Write-Host ""
     Write-Muted '(Get-Content "$env:APPDATA\Spotify\prefs") `'
     Write-Muted '  -replace ''(?m)^app\.enable-developer-mode=.*$'', ''app.enable-developer-mode=false'' `'
     Write-Muted '  | Set-Content "$env:APPDATA\Spotify\prefs"'
@@ -36,8 +38,6 @@ function Show-InstallWarning {
     Write-Host " - Spotify developer tools staying enabled"
     Write-Host " - F5 reload behavior remaining available"
     Write-Host " - remembered last-view route/session state across Spotify restarts"
-    Write-Host ""
-    Write-Warn "WARNING: running the reset commands above can also clear Spotify client preferences and session/UI state."
     Write-Host ""
 }
 
@@ -140,7 +140,17 @@ if (-not (Confirm-Install)) {
 }
 
 $spicetifyExe = Ensure-Spicetify
-$extensionsRoot = & $spicetifyExe path -e root
+$configFile = & $spicetifyExe -c 2>$null
+$configRoot = $null
+if ($configFile) {
+    $configRoot = Split-Path -Parent $configFile
+}
+if ($configRoot) {
+    $extensionsRoot = Join-Path $configRoot "Extensions"
+}
+else {
+    $extensionsRoot = & $spicetifyExe path -e root
+}
 
 if (-not $extensionsRoot) {
     throw "Could not resolve Spicetify extensions directory."

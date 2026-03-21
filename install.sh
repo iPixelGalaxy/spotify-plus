@@ -50,6 +50,8 @@ confirm_install() {
 show_warning() {
   print_note "To fully clear Spotify Plus client state later, fully close Spotify and run:"
   printf "\n"
+  print_warn "WARNING: running the reset commands below can also clear Spotify client preferences and session/UI state."
+  printf "\n"
 
   case "$(uname -s)" in
     Darwin)
@@ -85,8 +87,6 @@ show_warning() {
   printf " - Spotify developer tools staying enabled\n"
   printf " - F5 reload behavior remaining available\n"
   printf " - remembered last-view route/session state across Spotify restarts\n"
-  printf "\n"
-  print_warn "WARNING: running the reset commands above can also clear Spotify client preferences and session/UI state."
 }
 
 get_spicetify() {
@@ -188,7 +188,16 @@ if ! confirm_install; then
 fi
 
 SPICETIFY_EXE="$(ensure_spicetify)"
-EXTENSIONS_ROOT="$("$SPICETIFY_EXE" path -e root)"
+CONFIG_FILE="$("$SPICETIFY_EXE" -c 2>/dev/null || true)"
+CONFIG_ROOT=""
+if [ -n "$CONFIG_FILE" ]; then
+  CONFIG_ROOT="$(dirname "$CONFIG_FILE")"
+fi
+if [ -n "$CONFIG_ROOT" ]; then
+  EXTENSIONS_ROOT="$CONFIG_ROOT/Extensions"
+else
+  EXTENSIONS_ROOT="$("$SPICETIFY_EXE" path -e root)"
+fi
 
 if [ -z "$EXTENSIONS_ROOT" ]; then
   printf "%s\n" "Could not resolve the Spicetify extensions directory." >&2
@@ -198,9 +207,25 @@ fi
 mkdir -p "$EXTENSIONS_ROOT"
 
 print_section "Download"
-mapfile -t RELEASE_INFO < <(get_latest_release_info)
-RELEASE_VERSION="${RELEASE_INFO[0]}"
-ASSET_URL="${RELEASE_INFO[1]}"
+RELEASE_VERSION=""
+ASSET_URL=""
+release_info_index=0
+while IFS= read -r line; do
+  if [ "$release_info_index" -eq 0 ]; then
+    RELEASE_VERSION="$line"
+  elif [ "$release_info_index" -eq 1 ]; then
+    ASSET_URL="$line"
+  fi
+  release_info_index=$((release_info_index + 1))
+done <<EOF
+$(get_latest_release_info)
+EOF
+
+if [ -z "$RELEASE_VERSION" ] || [ -z "$ASSET_URL" ]; then
+  printf "%s\n" "Failed to resolve latest Spotify Plus release metadata." >&2
+  exit 1
+fi
+
 DESTINATION="$EXTENSIONS_ROOT/$ASSET_NAME"
 print_step "Installing Spotify Plus v$RELEASE_VERSION"
 print_step "Downloading $ASSET_NAME from the latest release..."
