@@ -112,8 +112,11 @@ get_spicetify() {
   return 1
 }
 
+SPICETIFY_WAS_PRESENT=0
+
 ensure_spicetify() {
   if get_spicetify >/dev/null 2>&1; then
+    SPICETIFY_WAS_PRESENT=1
     get_spicetify
     return 0
   fi
@@ -240,8 +243,15 @@ print_step "Enabling Spotify developer tools..."
 enable_developer_mode
 
 print_step "Applying Spicetify changes..."
-"$SPICETIFY_EXE" backup apply
+if [ "$SPICETIFY_WAS_PRESENT" -eq 1 ]; then
+  "$SPICETIFY_EXE" update >/dev/null 2>&1 || true
+else
+  if ! "$SPICETIFY_EXE" backup; then
+    print_note "Continuing with existing Spicetify backup state..."
+  fi
+fi
 "$SPICETIFY_EXE" apply
+"$SPICETIFY_EXE" restart >/dev/null 2>&1 || true
 
 print_section "Done"
 print_step "Spotify Plus v$RELEASE_VERSION installed successfully."

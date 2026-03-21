@@ -3,6 +3,7 @@ $ErrorActionPreference = "Stop"
 $RepoOwner = "iPixelGalaxy"
 $RepoName = "spotify-plus"
 $AssetName = "spotify-plus.js"
+$script:SpicetifyWasPresent = $false
 
 function Write-Section([string]$Text) {
     Write-Host ""
@@ -81,6 +82,7 @@ function Get-SpicetifyExe {
 function Ensure-Spicetify {
     $spicetifyExe = Get-SpicetifyExe
     if ($spicetifyExe) {
+        $script:SpicetifyWasPresent = $true
         return $spicetifyExe
     }
 
@@ -176,8 +178,23 @@ Write-Step "Enabling Spotify developer tools..."
 Enable-SpotifyDeveloperMode
 
 Write-Step "Applying Spicetify changes..."
-& $spicetifyExe backup apply
+if ($script:SpicetifyWasPresent) {
+    try {
+        & $spicetifyExe update | Out-Null
+    }
+    catch {
+    }
+}
+else {
+    try {
+        & $spicetifyExe backup
+    }
+    catch {
+        Write-Host "Continuing with existing Spicetify backup state..." -ForegroundColor Yellow
+    }
+}
 & $spicetifyExe apply
+& $spicetifyExe restart | Out-Null
 
 Write-Section "Done"
 Write-Step "Spotify Plus v$($releaseInfo.Version) installed successfully."
