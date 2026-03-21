@@ -4,7 +4,7 @@
     "description": "A Spicetify extension for cleaning up Spotify menus and reducing UI clutter.",
     "main": "./dist/spotify-plus.js",
     "readme": "README.md",
-    "branch": "main",
+    "branch": "master",
     "authors": [
       {
         "name": "Local Workspace"

@@ -29,6 +29,9 @@
 - Break into devtools with `F8`.
 - Best-effort devtools opening on startup when Spotify exposes a working API.
 - Restore the previous Spotify route across launches.
+- Show an in-app update prompt when a newer GitHub release is available.
+  - includes a platform-appropriate install/update command
+  - lets you copy the command, open the release, or skip that version
 
 ### Add To Playlist Override
 
@@ -38,7 +41,9 @@
 - Uses each selected folder independently.
   - Selecting a parent folder only shows playlists directly inside that folder.
   - Nested subfolders only contribute if they are explicitly selected too.
-- Routes clicks back through Spotify’s native add-to-playlist action path.
+- Adds selected tracks directly through Spotify’s playlist API when possible.
+- Skips tracks that already exist in the target playlist.
+- Closes the menu immediately when a playlist is clicked.
 - Filters out non-addable and generated playlists such as:
   - `daylist`
   - `Discover Weekly`
@@ -73,6 +78,14 @@ Run this in PowerShell:
 irm https://raw.githubusercontent.com/iPixelGalaxy/spotify-plus/master/install.ps1 | iex
 ```
 
+### One-Line macOS / Linux Install
+
+Run this in a shell:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/iPixelGalaxy/spotify-plus/master/install.sh | bash
+```
+
 ### ⚠️ PowerShell Install Warning
 
 `spotify-plus` enables a few persistent client behaviors that uninstalling the extension will not automatically undo:
@@ -94,13 +107,38 @@ Remove-Item -Recurse -Force "$env:LOCALAPPDATA\Spotify\Default\Session Storage" 
 
 This clears Spotify’s persisted XPUI/session state and can reset client preferences and session-related UI state (**Including** all user setting and plugin configs).
 
-The installer will:
+The installers will:
 
 - install Spicetify if it is missing
 - download the latest `spotify-plus.js` release asset
 - place it in your Spicetify `Extensions` folder
 - add it to your Spicetify config
+- enable Spotify developer tools
 - run `spicetify backup apply`
+- run `spicetify apply`
+
+### Uninstall
+
+PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/iPixelGalaxy/spotify-plus/master/uninstall.ps1 | iex
+```
+
+macOS / Linux:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/iPixelGalaxy/spotify-plus/master/uninstall.sh | bash
+```
+
+The uninstall scripts:
+
+- remove the extension from Spicetify config
+- delete the installed extension file
+- apply the updated Spicetify config
+- optionally ask `⚠️ Clear All User Settings?`
+  - default is `No`
+  - if confirmed, resets developer mode and clears Spotify session / XPUI-style state
 
 ### Manual Install
 
@@ -145,6 +183,7 @@ It:
 - publishes a manual GitHub release with:
   - `spotify-plus.js`
   - a versioned zip bundle
+  - install / uninstall scripts for Windows, macOS, and Linux
 
 ### ⚠️ Release Warning
 
@@ -171,3 +210,4 @@ That reset can also clear Spotify client preferences and session/UI state.
 
 - The PowerShell installer expects this repo to be published at `iPixelGalaxy/spotify-plus`.
 - If you fork or rename the repo, update the constants at the top of `install.ps1`.
+- If you fork or rename the repo, also update `install.sh`, `uninstall.ps1`, `uninstall.sh`, and `src/features/updatePrompt.ts`.

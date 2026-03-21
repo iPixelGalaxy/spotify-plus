@@ -15,6 +15,9 @@ const CUSTOM_SOURCE_CLASS = "spotify-plus-custom-playlist-source";
 const CUSTOM_CONTAINER_CLASS = "spotify-plus-custom-playlist-container";
 const FOLDER_OPEN_RETRY_DELAY_MS = 75;
 const FOLDER_OPEN_MAX_ATTEMPTS = 8;
+const ACTION_MATCH_RETRY_DELAY_MS = 50;
+const ACTION_MATCH_MAX_ATTEMPTS = 8;
+const ACTION_TRIGGER_DEBOUNCE_MS = 750;
 
 type DividerMenuNode = {
   kind: "divider";
@@ -26,10 +29,12 @@ type ActionMenuNode = {
   displayLabel: string;
   actionLabel: string;
   normalizedActionLabel: string;
+  playlistUri: string | null;
   rootFolderLabel: string;
   path: string[];
   target: "root" | "folder";
   template: HTMLElement | null;
+  liveButton: HTMLElement | null;
 };
 
 type MenuNode = DividerMenuNode | ActionMenuNode;
@@ -43,7 +48,9 @@ type RootFolderSource = {
 type NativePlaylistEntry = {
   displayLabel: string;
   actionLabel: string;
+  playlistUri: string | null;
   template: HTMLElement | null;
+  liveButton: HTMLElement | null;
 };
 
 type CustomMenuState = {
@@ -58,8 +65,23 @@ type CustomMenuState = {
   nativeLoadPromise: Promise<void> | null;
 };
 
+type PlaylistLookupDebugDetails = {
+  stage:
+    | "root-source-disconnected"
+    | "root-match-missing"
+    | "folder-popup-missing"
+    | "folder-match-missing";
+  actionLabel: string;
+  playlistUri: string | null;
+  rootFolderLabel: string;
+  path: string[];
+  availableLabels?: string[];
+  availableUris?: string[];
+};
+
 const customMenuStates = new Map<HTMLElement, CustomMenuState>();
 const playlistMetadataEligibilityCache = new Map<string, Promise<boolean>>();
+const playlistContentsUriCache = new Map<string, Promise<Set<string>>>();
 
 const BLOCKED_PLAYLIST_PATTERNS = [
   "dj",
@@ -71,9 +93,164 @@ const BLOCKED_PLAYLIST_PATTERNS = [
   "your episodes",
 ];
 
+function normalizePlaylistMatchText(value: string | null | undefined) {
+  return normalizeText(value)
+    .normalize("NFKD")
+    .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
+    .replace(/[\u201C\u201D\u201E\u201F]/g, '"')
+    .replace(/[`´]/g, "'")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+}
+
+function logPlaylistLookupFailure(details: PlaylistLookupDebugDetails) {
+  console.warn("[Spotify+] Add to playlist lookup failed", details);
+}
+
 function isBlockedPlaylistName(value: string) {
   const normalizedValue = normalizeText(value);
   return BLOCKED_PLAYLIST_PATTERNS.some((pattern) => normalizedValue.includes(pattern));
+}
+
+function isTrackUri(value: unknown): value is string {
+  return typeof value === "string" && /^spotify:track:[A-Za-z0-9]+$/.test(value);
+}
+
+function collectTrackUriCandidates(
+  value: unknown,
+  candidates: string[][],
+  seen: Set<object>
+) {
+  if (!value || typeof value !== "object") {
+    return;
+  }
+
+  if (seen.has(value)) {
+    return;
+  }
+  seen.add(value);
+
+  if (Array.isArray(value)) {
+    const directTrackUris = value.filter(isTrackUri);
+    if (directTrackUris.length > 0 && directTrackUris.length === value.length) {
+      candidates.push([...new Set(directTrackUris)]);
+      return;
+    }
+
+    for (const item of value) {
+      collectTrackUriCandidates(item, candidates, seen);
+    }
+    return;
+  }
+
+  const record = value as Record<string, unknown>;
+
+  for (const [key, nestedValue] of Object.entries(record)) {
+    if (!nestedValue) {
+      continue;
+    }
+
+    if (
+      Array.isArray(nestedValue) &&
+      ["uris", "selectedUris", "tracks", "trackUris"].includes(key)
+    ) {
+      const directTrackUris = nestedValue.filter(isTrackUri);
+      if (directTrackUris.length > 0) {
+        candidates.push([...new Set(directTrackUris)]);
+        continue;
+      }
+    }
+
+    if (isTrackUri(nestedValue)) {
+      candidates.push([nestedValue]);
+      continue;
+    }
+
+    collectTrackUriCandidates(nestedValue, candidates, seen);
+  }
+}
+
+function getSelectedTrackUrisFromContextMenu(rootMenu: HTMLElement) {
+  const menuHost = rootMenu.closest<HTMLElement>("#context-menu");
+  if (!menuHost) {
+    return [];
+  }
+
+  const trackUriCandidates: string[][] = [];
+  const seen = new Set<object>();
+  const elements = [menuHost, ...menuHost.querySelectorAll<HTMLElement>("*")];
+
+  for (const element of elements) {
+    for (const key of Object.keys(element)) {
+      if (!key.startsWith("__reactProps") && !key.startsWith("__reactFiber")) {
+        continue;
+      }
+
+      collectTrackUriCandidates(
+        (element as Record<string, unknown>)[key],
+        trackUriCandidates,
+        seen
+      );
+    }
+  }
+
+  const sortedCandidates = trackUriCandidates
+    .filter((candidate) => candidate.length > 0)
+    .sort((left, right) => left.length - right.length);
+
+  return sortedCandidates[0] ?? [];
+}
+
+function closeContextMenu(rootMenu: HTMLElement) {
+  const hostMenu = rootMenu.closest<HTMLElement>("#context-menu");
+  const tippyRoot = rootMenu.closest<HTMLElement>("[data-tippy-root]");
+
+  (document.activeElement as HTMLElement | null)?.blur?.();
+  if (hostMenu) {
+    hostMenu.style.display = "none";
+  }
+  if (tippyRoot) {
+    tippyRoot.style.display = "none";
+    window.setTimeout(() => {
+      tippyRoot.remove();
+    }, 0);
+  }
+}
+
+async function getPlaylistTrackUriSet(playlistUri: string) {
+  const cached = playlistContentsUriCache.get(playlistUri);
+  if (cached) {
+    return cached;
+  }
+
+  const pending = (async () => {
+    try {
+      const items =
+        (await (Spicetify.Platform as any)?.PlaylistAPI?.getContents?.(playlistUri, {
+          limit: 100000,
+        }))?.items ?? [];
+
+      const uris = new Set<string>();
+      for (const item of items) {
+        const uri =
+          typeof item?.uri === "string"
+            ? item.uri
+            : typeof item?.link === "string"
+              ? item.link
+              : null;
+        if (isTrackUri(uri)) {
+          uris.add(uri);
+        }
+      }
+
+      return uris;
+    } catch {
+      return new Set<string>();
+    }
+  })();
+
+  playlistContentsUriCache.set(playlistUri, pending);
+  return pending;
 }
 
 function findPlaylistUriInValue(value: unknown): string | null {
@@ -102,7 +279,11 @@ function findPlaylistUriInValue(value: unknown): string | null {
   return null;
 }
 
-function getPlaylistUriFromRow(row: HTMLElement): string | null {
+function getPlaylistUriFromRow(row: HTMLElement | null | undefined): string | null {
+  if (!row || typeof row.querySelectorAll !== "function") {
+    return null;
+  }
+
   const candidates = [row, ...row.querySelectorAll<HTMLElement>("*")];
 
   for (const element of candidates) {
@@ -212,6 +393,10 @@ function wait(ms: number) {
   });
 }
 
+function isConnectedElement(element: Node | null | undefined) {
+  return Boolean(element && "isConnected" in element && element.isConnected);
+}
+
 function getSelectedFolders() {
   const settings = getSettings();
   if (!settings.overridePlaylistFolderBehavior) {
@@ -309,7 +494,11 @@ function getFolderSource(folder: PlaylistFolderEntry) {
   };
 }
 
-function getNestedPopup(parentItem: HTMLElement) {
+function getNestedPopup(parentItem: HTMLElement | null | undefined) {
+  if (!parentItem || typeof parentItem.querySelectorAll !== "function") {
+    return null;
+  }
+
   const popupMenu = Array.from(
     parentItem.querySelectorAll<HTMLElement>(".main-contextMenu-menu")
   ).find((menu) => getMenuDepth(menu) >= 2);
@@ -363,7 +552,7 @@ async function ensureNestedPopupReady(parentItem: HTMLElement, button: HTMLEleme
   }
 
   for (let attempt = 0; attempt <= FOLDER_OPEN_MAX_ATTEMPTS; attempt += 1) {
-    if (!parentItem.isConnected || !button.isConnected) {
+    if (!isConnectedElement(parentItem) || !isConnectedElement(button)) {
       return null;
     }
 
@@ -380,11 +569,37 @@ async function ensureNestedPopupReady(parentItem: HTMLElement, button: HTMLEleme
   return getNestedPopup(parentItem);
 }
 
-function findMenuItemByLabel(scope: ParentNode, label: string) {
+async function findNativeActionMatchWithRetry(
+  scope: ParentNode | null | undefined,
+  playlistUri: string | null,
+  normalizedActionLabel: string
+) {
+  for (let attempt = 0; attempt <= ACTION_MATCH_MAX_ATTEMPTS; attempt += 1) {
+    const match =
+      findMenuItemByUri(scope, playlistUri) ??
+      findMenuItemByLabel(scope, normalizedActionLabel);
+    if (match) {
+      return match;
+    }
+
+    if (attempt < ACTION_MATCH_MAX_ATTEMPTS) {
+      await wait(ACTION_MATCH_RETRY_DELAY_MS);
+    }
+  }
+
+  return null;
+}
+
+function findMenuItemByLabel(scope: ParentNode | null | undefined, label: string) {
+  if (!scope || typeof (scope as ParentNode).querySelectorAll !== "function") {
+    return null;
+  }
+
   const items = Array.from(scope.querySelectorAll<HTMLElement>(".main-contextMenu-menuItem"));
+  const normalizedLabel = normalizePlaylistMatchText(label);
 
   for (const item of items) {
-    if (isSearchRow(item) || getItemLabel(item) !== label) {
+    if (isSearchRow(item) || normalizePlaylistMatchText(getItemLabel(item)) !== normalizedLabel) {
       continue;
     }
 
@@ -395,6 +610,59 @@ function findMenuItemByLabel(scope: ParentNode, label: string) {
   }
 
   return null;
+}
+
+function findMenuItemByUri(scope: ParentNode | null | undefined, playlistUri: string | null) {
+  if (!scope || typeof (scope as ParentNode).querySelectorAll !== "function" || !playlistUri) {
+    return null;
+  }
+
+  const items = Array.from(scope.querySelectorAll<HTMLElement>(".main-contextMenu-menuItem"));
+
+  for (const item of items) {
+    if (isSearchRow(item)) {
+      continue;
+    }
+
+    if (getPlaylistUriFromRow(item) !== playlistUri) {
+      continue;
+    }
+
+    const button = item.querySelector<HTMLElement>(".main-contextMenu-menuItemButton");
+    if (button) {
+      return { item, button };
+    }
+  }
+
+  return null;
+}
+
+function collectMenuDebugDetails(scope: ParentNode | null | undefined) {
+  if (!scope || typeof (scope as ParentNode).querySelectorAll !== "function") {
+    return { availableLabels: [], availableUris: [] };
+  }
+
+  const items = Array.from(scope.querySelectorAll<HTMLElement>(".main-contextMenu-menuItem"));
+  const availableLabels: string[] = [];
+  const availableUris: string[] = [];
+
+  for (const item of items) {
+    if (isSearchRow(item) || isDivider(item)) {
+      continue;
+    }
+
+    const label = getItemLabel(item);
+    if (label) {
+      availableLabels.push(label);
+    }
+
+    const uri = getPlaylistUriFromRow(item);
+    if (uri) {
+      availableUris.push(uri);
+    }
+  }
+
+  return { availableLabels, availableUris };
 }
 
 async function resolveFolderSourceInMenu(
@@ -461,7 +729,11 @@ function createDividerClone(template: HTMLElement | null) {
   return divider;
 }
 
-function scrubClonedNode(node: HTMLElement) {
+function scrubClonedNode(node: HTMLElement | null | undefined) {
+  if (!node || typeof node.querySelectorAll !== "function") {
+    return;
+  }
+
   const nestedMenus = [
     ...node.querySelectorAll<HTMLElement>(".main-contextMenu-menu"),
     ...node.querySelectorAll<HTMLElement>("[data-tippy-root]"),
@@ -512,20 +784,24 @@ function createDividerNode(template: HTMLElement | null): DividerMenuNode {
 function createActionNode(
   displayLabel: string,
   actionLabel: string,
+  playlistUri: string | null,
   rootFolderLabel: string,
   path: string[],
   target: "root" | "folder",
-  template: HTMLElement | null
+  template: HTMLElement | null,
+  liveButton: HTMLElement | null
 ): ActionMenuNode {
   return {
     kind: "action",
     displayLabel,
     actionLabel,
-    normalizedActionLabel: normalizeText(actionLabel),
+    normalizedActionLabel: normalizePlaylistMatchText(actionLabel),
+    playlistUri,
     rootFolderLabel,
     path: [...path],
     target,
     template,
+    liveButton,
   };
 }
 
@@ -535,7 +811,9 @@ function getFallbackPlaylistEntries(folder: PlaylistFolderEntry) {
     .map((playlist) => ({
       displayLabel: playlist.name,
       actionLabel: playlist.name,
+      playlistUri: playlist.uri,
       template: null,
+      liveButton: null,
     }));
 }
 
@@ -543,8 +821,25 @@ function getEligiblePlaylistNameSet(folder: PlaylistFolderEntry) {
   return new Set(
     folder.playlists
       .filter((playlist) => !isBlockedPlaylistName(playlist.name))
-      .map((playlist) => normalizeText(playlist.name))
+      .map((playlist) => normalizePlaylistMatchText(playlist.name))
   );
+}
+
+function getEligiblePlaylistUriByName(folder: PlaylistFolderEntry) {
+  const urisByName = new Map<string, string>();
+
+  for (const playlist of folder.playlists) {
+    if (!playlist.uri || isBlockedPlaylistName(playlist.name)) {
+      continue;
+    }
+
+    const key = normalizePlaylistMatchText(playlist.name);
+    if (!urisByName.has(key)) {
+      urisByName.set(key, playlist.uri);
+    }
+  }
+
+  return urisByName;
 }
 
 function buildMenuNodes(state: CustomMenuState) {
@@ -557,36 +852,42 @@ function buildMenuNodes(state: CustomMenuState) {
         (
           state.nativePlaylistsByFolder.get(source.sourceKey) ??
           getFallbackPlaylistEntries(source.folder)
-        ).map((playlist) => ({
-          displayLabel: playlist.displayLabel,
-          actionLabel: playlist.actionLabel,
-          rootFolderLabel: source.sourceKey,
-          path: [] as string[],
-          template: playlist.template,
-        }))
-      )
-    : state.folderSources.flatMap((source) =>
+          ).map((playlist) => ({
+            displayLabel: playlist.displayLabel,
+            actionLabel: playlist.actionLabel,
+            playlistUri: playlist.playlistUri,
+            rootFolderLabel: source.sourceKey,
+            path: [] as string[],
+            template: playlist.template,
+            liveButton: playlist.liveButton,
+          }))
+        )
+      : state.folderSources.flatMap((source) =>
         getFallbackPlaylistEntries(source.folder).map((playlist) => ({
           displayLabel: playlist.displayLabel,
           actionLabel: playlist.actionLabel,
+          playlistUri: playlist.playlistUri,
           rootFolderLabel: source.sourceKey,
           path: [] as string[],
           template: playlist.template,
+          liveButton: playlist.liveButton,
         }))
       )
     ;
 
   if (newPlaylistRow) {
     nodes.push(
-      createActionNode(
-        "New playlist",
-        "new playlist",
-        "",
-        [],
-        "root",
-        newPlaylistRow.cloneNode(true) as HTMLElement
-      )
-    );
+        createActionNode(
+          "New playlist",
+          "new playlist",
+          null,
+          "",
+          [],
+          "root",
+          newPlaylistRow.cloneNode(true) as HTMLElement,
+          newPlaylistMatch?.button ?? null
+        )
+      );
   }
 
   if (newPlaylistRow && playlists.length > 0) {
@@ -598,10 +899,12 @@ function buildMenuNodes(state: CustomMenuState) {
       createActionNode(
         playlist.displayLabel,
         playlist.actionLabel,
+        playlist.playlistUri ?? null,
         playlist.rootFolderLabel,
         playlist.path,
         "folder",
-        null
+        playlist.template,
+        playlist.liveButton ?? null
       )
     );
   }
@@ -660,7 +963,9 @@ async function extractDirectAddablePlaylistEntries(
     entries.push({
       displayLabel: actionLabel,
       actionLabel,
+      playlistUri,
       template: row.cloneNode(true) as HTMLElement,
+      liveButton: button,
     });
   }
 
@@ -722,16 +1027,40 @@ async function resolveNativePopupForNode(state: CustomMenuState, node: ActionMen
 
 async function triggerNativeAction(state: CustomMenuState, node: ActionMenuNode) {
   if (
-    !state.rootMenu.isConnected ||
-    !state.sourceContainer.isConnected ||
+    !isConnectedElement(state.rootMenu) ||
+    !isConnectedElement(state.sourceContainer) ||
     state.folderSources.length === 0
   ) {
+    logPlaylistLookupFailure({
+      stage: "root-source-disconnected",
+      actionLabel: node.actionLabel,
+      playlistUri: node.playlistUri,
+      rootFolderLabel: node.rootFolderLabel,
+      path: node.path,
+    });
     return;
   }
 
   if (node.target === "root") {
-    const match = findMenuItemByLabel(state.sourceContainer, node.normalizedActionLabel);
+    if (isConnectedElement(node.liveButton)) {
+      node.liveButton.click();
+      return;
+    }
+
+    const match = await findNativeActionMatchWithRetry(
+      state.sourceContainer,
+      node.playlistUri,
+      node.normalizedActionLabel
+    );
     if (!match) {
+      logPlaylistLookupFailure({
+        stage: "root-match-missing",
+        actionLabel: node.actionLabel,
+        playlistUri: node.playlistUri,
+        rootFolderLabel: node.rootFolderLabel,
+        path: node.path,
+        ...collectMenuDebugDetails(state.sourceContainer),
+      });
       Spicetify.showNotification(
         `Spotify+: couldn't find "${node.actionLabel}" in Add to playlist`,
         true
@@ -743,9 +1072,66 @@ async function triggerNativeAction(state: CustomMenuState, node: ActionMenuNode)
     return;
   }
 
+  if (node.playlistUri) {
+    const selectedTrackUris = getSelectedTrackUrisFromContextMenu(state.rootMenu);
+    if (selectedTrackUris.length > 0) {
+      try {
+        const existingTrackUris = await getPlaylistTrackUriSet(node.playlistUri);
+        const trackUrisToAdd = selectedTrackUris.filter((uri) => !existingTrackUris.has(uri));
+
+        closeContextMenu(state.rootMenu);
+
+        if (trackUrisToAdd.length === 0) {
+          Spicetify.showNotification("Spotify+: selected track already exists in playlist");
+          return;
+        }
+
+        await (Spicetify.Platform as any)?.PlaylistAPI?.add?.(
+          node.playlistUri,
+          trackUrisToAdd,
+          {}
+        );
+        for (const uri of trackUrisToAdd) {
+          existingTrackUris.add(uri);
+        }
+        return;
+      } catch {
+        // Fall through to the native menu path below.
+      }
+    }
+  }
+
+  if (isConnectedElement(node.liveButton)) {
+    node.liveButton.click();
+    return;
+  }
+
   const popup = await resolveNativePopupForNode(state, node);
-  const match = popup ? findMenuItemByLabel(popup.popupMenu, node.normalizedActionLabel) : null;
+  if (!popup) {
+    logPlaylistLookupFailure({
+      stage: "folder-popup-missing",
+      actionLabel: node.actionLabel,
+      playlistUri: node.playlistUri,
+      rootFolderLabel: node.rootFolderLabel,
+      path: node.path,
+    });
+  }
+  const match = popup
+    ? await findNativeActionMatchWithRetry(
+        popup.popupMenu,
+        node.playlistUri,
+        node.normalizedActionLabel
+      )
+    : null;
   if (!match) {
+    logPlaylistLookupFailure({
+      stage: "folder-match-missing",
+      actionLabel: node.actionLabel,
+      playlistUri: node.playlistUri,
+      rootFolderLabel: node.rootFolderLabel,
+      path: node.path,
+      ...(popup ? collectMenuDebugDetails(popup.popupMenu) : {}),
+    });
     Spicetify.showNotification(
       `Spotify+: couldn't find "${node.actionLabel}" in Add to playlist`,
       true
@@ -769,13 +1155,24 @@ function renderCustomMenu(state: CustomMenuState) {
 
     const row = createRenderedRow(node);
     const button = row.querySelector<HTMLElement>(".main-contextMenu-menuItemButton");
-    if (button) {
-      button.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        void triggerNativeAction(state, node);
-      });
-    }
+      if (button) {
+        const triggerAction = (event: Event) => {
+          event.preventDefault();
+          event.stopPropagation();
+
+          const now = Date.now();
+          const lastTriggeredAt = Number(button.dataset.spotifyPlusTriggeredAt ?? "0");
+          if (now - lastTriggeredAt < ACTION_TRIGGER_DEBOUNCE_MS) {
+            return;
+          }
+
+          button.dataset.spotifyPlusTriggeredAt = String(now);
+          closeContextMenu(state.rootMenu);
+          void triggerNativeAction(state, node);
+        };
+
+        button.addEventListener("pointerdown", triggerAction);
+      }
 
     state.customContainer.appendChild(row);
   }
@@ -817,10 +1214,21 @@ async function loadNativePlaylistsForState(state: CustomMenuState) {
 
       nativePlaylistsByFolder.set(
         source.sourceKey,
-        (await extractDirectAddablePlaylistEntries(popup.popupMenu, includeRootFolderLabel)).filter(
-          (playlist) =>
-            getEligiblePlaylistNameSet(source.folder).has(normalizeText(playlist.actionLabel))
-        )
+        (await extractDirectAddablePlaylistEntries(popup.popupMenu, includeRootFolderLabel))
+          .filter((playlist) =>
+            getEligiblePlaylistNameSet(source.folder).has(
+              normalizePlaylistMatchText(playlist.actionLabel)
+            )
+          )
+          .map((playlist) => ({
+            ...playlist,
+            playlistUri:
+              playlist.playlistUri ??
+              getEligiblePlaylistUriByName(source.folder).get(
+                normalizePlaylistMatchText(playlist.actionLabel)
+              ) ??
+              null,
+          }))
       );
     }
 
@@ -856,10 +1264,10 @@ function releaseCustomMenuState(rootMenu: HTMLElement) {
 function cleanupDetachedStates(activeRootMenus: HTMLElement[]) {
   for (const [rootMenu, state] of customMenuStates) {
     if (
-      rootMenu.isConnected &&
+      isConnectedElement(rootMenu) &&
       activeRootMenus.includes(rootMenu) &&
-      state.sourceContainer.isConnected &&
-      state.customContainer.isConnected
+      isConnectedElement(state.sourceContainer) &&
+      isConnectedElement(state.customContainer)
     ) {
       continue;
     }
@@ -875,8 +1283,8 @@ function ensureCustomMenuState(rootMenu: HTMLElement, folders: PlaylistFolderEnt
   if (
     existingState &&
     existingState.selectedFolderIdsKey === selectedFolderIdsKey &&
-    existingState.sourceContainer.isConnected &&
-    existingState.customContainer.isConnected
+    isConnectedElement(existingState.sourceContainer) &&
+    isConnectedElement(existingState.customContainer)
   ) {
     return existingState;
   }

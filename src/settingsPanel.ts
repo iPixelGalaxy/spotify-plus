@@ -217,6 +217,19 @@ function ensureSettingsPanelStyles() {
   background: rgba(255, 255, 255, 0.13);
 }
 
+.sl-btn.is-muted {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  border-color: rgba(255, 255, 255, 0.08);
+  cursor: default;
+}
+
+.sl-btn.is-muted:hover {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.9);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
 .sl-folderChecklist {
   width: 100%;
   max-height: 240px;
@@ -442,9 +455,6 @@ export function showSettingsPanel() {
   makeToggle(scroll, "Hide Friend Activity button", "hideFriendActivityButton");
   makeToggle(scroll, "Hide Lyrics button", "hideLyricsButton");
   makeToggle(scroll, "Hide Miniplayer button", "hideMiniplayerButton");
-
-  makeGroup(scroll, "Tools");
-  makeToggle(scroll, "Enable Devtools On Startup", "enableDevtoolsOnStartup");
 
   makeGroup(scroll, "Playlist Menu");
   const overrideToggle = makeToggle(

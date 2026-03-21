@@ -4,23 +4,40 @@ $RepoOwner = "iPixelGalaxy"
 $RepoName = "spotify-plus"
 $AssetName = "spotify-plus.js"
 
+function Write-Section([string]$Text) {
+    Write-Host ""
+    Write-Host $Text -ForegroundColor Cyan
+}
+
+function Write-Step([string]$Text) {
+    Write-Host $Text -ForegroundColor Green
+}
+
+function Write-Warn([string]$Text) {
+    Write-Host $Text -ForegroundColor Red
+}
+
+function Write-Muted([string]$Text) {
+    Write-Host $Text -ForegroundColor DarkGray
+}
+
 function Show-InstallWarning {
     Write-Host ""
-    Write-Host "WARNING: Spotify Plus enables persistent client behaviors that uninstalling the extension will not automatically undo." -ForegroundColor Yellow
+    Write-Warn "WARNING: Spotify Plus enables persistent client behaviors that uninstalling the extension will not automatically undo."
     Write-Host ""
-    Write-Host "This can leave behind:" -ForegroundColor Yellow
+    Write-Warn "This can leave behind:"
     Write-Host " - Spotify developer tools staying enabled"
     Write-Host " - F5 reload behavior remaining available"
     Write-Host " - remembered last-view route/session state across Spotify restarts"
     Write-Host ""
     Write-Host "To fully clear that client state later, fully close Spotify and run:" -ForegroundColor Yellow
     Write-Host ""
-    Write-Host '(Get-Content "$env:APPDATA\Spotify\prefs") `'
-    Write-Host '  -replace ''(?m)^app\.enable-developer-mode=.*$'', ''app.enable-developer-mode=false'' `'
-    Write-Host '  | Set-Content "$env:APPDATA\Spotify\prefs"'
+    Write-Muted '(Get-Content "$env:APPDATA\Spotify\prefs") `'
+    Write-Muted '  -replace ''(?m)^app\.enable-developer-mode=.*$'', ''app.enable-developer-mode=false'' `'
+    Write-Muted '  | Set-Content "$env:APPDATA\Spotify\prefs"'
     Write-Host ""
-    Write-Host 'Remove-Item -Recurse -Force "$env:LOCALAPPDATA\Spotify\Default\Sessions" -ErrorAction SilentlyContinue'
-    Write-Host 'Remove-Item -Recurse -Force "$env:LOCALAPPDATA\Spotify\Default\Session Storage" -ErrorAction SilentlyContinue'
+    Write-Muted 'Remove-Item -Recurse -Force "$env:LOCALAPPDATA\Spotify\Default\Sessions" -ErrorAction SilentlyContinue'
+    Write-Muted 'Remove-Item -Recurse -Force "$env:LOCALAPPDATA\Spotify\Default\Session Storage" -ErrorAction SilentlyContinue'
     Write-Host ""
     Write-Host "That reset can also clear Spotify client preferences and session/UI state." -ForegroundColor Yellow
     Write-Host ""
@@ -69,7 +86,7 @@ function Ensure-Spicetify {
         return $spicetifyExe
     }
 
-    Write-Host "Spicetify was not found. Installing Spicetify CLI..."
+    Write-Step "Spicetify was not found. Installing Spicetify CLI..."
     Invoke-Expression (Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/spicetify/cli/main/install.ps1").Content
 
     $spicetifyExe = Get-SpicetifyExe
@@ -117,7 +134,7 @@ function Enable-SpotifyDeveloperMode {
 
 Show-InstallWarning
 if (-not (Confirm-Install)) {
-    Write-Host "Install cancelled."
+    Write-Host "Install cancelled." -ForegroundColor Yellow
     return
 }
 
@@ -133,20 +150,24 @@ New-Item -ItemType Directory -Path $extensionsRoot -Force | Out-Null
 $downloadUrl = Get-LatestReleaseAssetUrl
 $destination = Join-Path $extensionsRoot $AssetName
 
-Write-Host "Downloading $AssetName from latest release..."
+Write-Section "Download"
+Write-Step "Downloading $AssetName from latest release..."
 Invoke-WebRequest -UseBasicParsing -Uri $downloadUrl -OutFile $destination
 
-Write-Host "Registering extension in Spicetify config..."
+Write-Section "Install"
+Write-Step "Registering extension in Spicetify config..."
 & $spicetifyExe config extensions "$AssetName-" extensions $AssetName | Out-Null
 
-Write-Host "Enabling Spotify developer tools..."
+Write-Step "Enabling Spotify developer tools..."
 & $spicetifyExe enable-devtools | Out-Null
 Enable-SpotifyDeveloperMode
 
-Write-Host "Applying Spicetify changes..."
+Write-Step "Applying Spicetify changes..."
 & $spicetifyExe backup apply
 & $spicetifyExe apply
 
-Write-Host ""
-Write-Host "Spotify Plus installed successfully."
-Write-Host "Extension path: $destination"
+Write-Section "Done"
+Write-Step "Spotify Plus installed successfully."
+Write-Muted "Extension path: $destination"
+Write-Muted "Uninstall later with:"
+Write-Muted "irm https://raw.githubusercontent.com/$RepoOwner/$RepoName/master/uninstall.ps1 | iex"

@@ -1,4 +1,8 @@
-import { SETTINGS_CHANGED_EVENT, getSettings } from "./config";
+import {
+  SETTINGS_CHANGED_EVENT,
+  getSettings,
+  setSetting,
+} from "./config";
 
 const LAST_LOCATION_KEY = "spotify-plus.last-location";
 
@@ -31,6 +35,7 @@ let pendingRestoreTarget: string | null = null;
 let keydownBound = false;
 let devtoolsRetryTimer: number | null = null;
 let devtoolsRetryAttempts = 0;
+let hasPrimedDevtoolsSetting = false;
 
 const RESTORE_RETRY_INTERVAL_MS = 500;
 const RESTORE_RETRY_MAX_ATTEMPTS = 20;
@@ -194,6 +199,16 @@ function resetDevtoolsRetryState() {
     window.clearTimeout(devtoolsRetryTimer);
     devtoolsRetryTimer = null;
   }
+}
+
+function primeDevtoolsSetting() {
+  if (hasPrimedDevtoolsSetting) {
+    return;
+  }
+
+  hasPrimedDevtoolsSetting = true;
+  setSetting("enableDevtoolsOnStartup", false);
+  setSetting("enableDevtoolsOnStartup", true);
 }
 
 function getHistory(): HistoryLike | null {
@@ -371,6 +386,8 @@ function onToolKeydown(event: KeyboardEvent) {
 }
 
 export function startToolsController() {
+  primeDevtoolsSetting();
+
   const settings = getSettings();
 
   if (settings.enableDevtoolsOnStartup) {

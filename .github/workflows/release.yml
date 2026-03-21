@@ -43,7 +43,7 @@ jobs:
         run: |
           $version = "${{ inputs.version }}"
           $bundleName = "spotify-plus-v$version.zip"
-          Compress-Archive -Path dist\spotify-plus.js,README.md,manifest.json,install.ps1 -DestinationPath $bundleName -Force
+          Compress-Archive -Path dist\spotify-plus.js,README.md,manifest.json,install.ps1,install.sh,uninstall.ps1,uninstall.sh -DestinationPath $bundleName -Force
 
       - name: Publish release
         uses: softprops/action-gh-release@v2

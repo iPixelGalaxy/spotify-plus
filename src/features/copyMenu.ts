@@ -223,15 +223,15 @@ function syncCopyMenuPlacement() {
     return;
   }
 
-  const shareItem = items.find((item) => getItemLabel(item) === "share");
+  const firstItem = items[0] ?? null;
   for (const copyItem of copyItems) {
     injectCopyMenuIcon(copyItem);
 
-    if (!shareItem || shareItem === copyItem || !shareItem.parentElement) {
+    if (!firstItem || firstItem === copyItem || !firstItem.parentElement) {
       continue;
     }
 
-    shareItem.parentElement.insertBefore(copyItem, shareItem);
+    firstItem.parentElement.insertBefore(copyItem, firstItem);
   }
 }
 
