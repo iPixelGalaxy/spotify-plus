@@ -4,6 +4,7 @@ import {
   getSetting,
   setSetting,
 } from "./config";
+import { getCurrentVersion } from "./features/updatePrompt";
 import { refreshPlaylistFolderCache } from "./playlistFolders";
 
 const PANEL_STYLE_ID = "spotify-plus-settings-panel-style";
@@ -298,6 +299,13 @@ function makeRow(scroll: HTMLElement, label: string, control: HTMLElement, stack
   scroll.appendChild(row);
 }
 
+function makeValue(scroll: HTMLElement, label: string, value: string) {
+  const text = document.createElement("span");
+  text.className = "sl-settings-label";
+  text.textContent = value;
+  makeRow(scroll, label, text);
+}
+
 function makeToggle(
   scroll: HTMLElement,
   label: string,
@@ -488,6 +496,9 @@ export function showSettingsPanel() {
 
   makeRow(scroll, "Scan playlist folders", refreshButton);
   makeRow(scroll, "Folders to show in Add to playlist", folderChecklist, true);
+
+  makeGroup(scroll, "About");
+  makeValue(scroll, "Version", getCurrentVersion());
 
   container.addEventListener("wheel", (event) => event.stopPropagation(), { passive: false });
 

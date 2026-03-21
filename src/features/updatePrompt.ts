@@ -1,5 +1,8 @@
-const UPDATE_CHECK_CACHE_KEY = "spotify-plus.update-check-cache";
+import { CURRENT_VERSION } from "../version";
+
+const UPDATE_CHECK_CACHE_KEY_PREFIX = "spotify-plus.update-check-cache";
 const UPDATE_DISMISSED_VERSION_KEY = "spotify-plus.update-dismissed-version";
+const VERSION_OVERRIDE_KEY = "spotify-plus.debug-version-override";
 const UPDATE_STYLE_ID = "spotify-plus-update-prompt-style";
 const UPDATE_DIALOG_CLASS = "SpotifyPlusUpdateDialog";
 const UPDATE_OVERLAY_CLASS = "SpotifyPlusUpdateOverlay";
@@ -7,7 +10,6 @@ const UPDATE_CHECK_INTERVAL_MS = 1000 * 60 * 60 * 12;
 export const UPDATE_AVAILABILITY_CHANGED_EVENT = "spotify-plus:update-availability-changed";
 const REPO_OWNER = "iPixelGalaxy";
 const REPO_NAME = "spotify-plus";
-const CURRENT_VERSION = "0.1.0";
 
 let availableRelease: LatestRelease | null = null;
 
@@ -236,6 +238,11 @@ export function getAvailableRelease() {
   return availableRelease;
 }
 
+export function getCurrentVersion() {
+  const override = Spicetify.LocalStorage.get(VERSION_OVERRIDE_KEY) ?? "";
+  return override || CURRENT_VERSION;
+}
+
 export function openUpdatePrompt(release: LatestRelease | null = availableRelease) {
   if (!release) {
     Spicetify.showNotification("Spotify+: no update available");
@@ -277,7 +284,7 @@ export function openUpdatePrompt(release: LatestRelease | null = availableReleas
   body.className = `${UPDATE_DIALOG_CLASS}Body`;
 
   const message = document.createElement("p");
-  message.textContent = `You're running ${CURRENT_VERSION}. Install ${release.version} with:`;
+  message.textContent = `You're running ${getCurrentVersion()}. Install ${release.version} with:`;
 
   const commandBlock = document.createElement("div");
   commandBlock.className = `${UPDATE_DIALOG_CLASS}Command`;
@@ -350,20 +357,24 @@ async function fetchLatestRelease() {
   };
 }
 
+function getUpdateCheckCacheKey() {
+  return `${UPDATE_CHECK_CACHE_KEY_PREFIX}.${getCurrentVersion()}`;
+}
+
 export async function startUpdatePromptController() {
   const now = Date.now();
-  const lastCheckedAt = Number(Spicetify.LocalStorage.get(UPDATE_CHECK_CACHE_KEY) ?? "0");
+  const lastCheckedAt = Number(Spicetify.LocalStorage.get(getUpdateCheckCacheKey()) ?? "0");
   if (now - lastCheckedAt < UPDATE_CHECK_INTERVAL_MS) {
     emitUpdateAvailabilityChanged();
     return;
   }
 
-  Spicetify.LocalStorage.set(UPDATE_CHECK_CACHE_KEY, String(now));
+  Spicetify.LocalStorage.set(getUpdateCheckCacheKey(), String(now));
 
   try {
     const latestRelease = await fetchLatestRelease();
     const dismissedVersion = Spicetify.LocalStorage.get(UPDATE_DISMISSED_VERSION_KEY) ?? "";
-    if (!isVersionNewer(latestRelease.version, CURRENT_VERSION)) {
+    if (!isVersionNewer(latestRelease.version, getCurrentVersion())) {
       availableRelease = null;
       emitUpdateAvailabilityChanged();
       return;
@@ -385,12 +396,30 @@ export async function startUpdatePromptController() {
 function installDebugHelpers() {
   const globalWindow = window as Window & {
     SpotifyPlusDebug?: {
+      version?: string;
+      overrideVersion?: (version: string) => void;
+      clearVersionOverride?: () => void;
       forceUpdatePrompt?: (version?: string) => void;
       resetUpdateCheck?: () => void;
     };
   };
 
   globalWindow.SpotifyPlusDebug ??= {};
+  Object.defineProperty(globalWindow.SpotifyPlusDebug, "version", {
+    configurable: true,
+    enumerable: true,
+    get: () => getCurrentVersion(),
+  });
+  globalWindow.SpotifyPlusDebug.overrideVersion = (version: string) => {
+    Spicetify.LocalStorage.set(VERSION_OVERRIDE_KEY, version);
+    availableRelease = null;
+    emitUpdateAvailabilityChanged();
+  };
+  globalWindow.SpotifyPlusDebug.clearVersionOverride = () => {
+    Spicetify.LocalStorage.remove?.(VERSION_OVERRIDE_KEY);
+    availableRelease = null;
+    emitUpdateAvailabilityChanged();
+  };
   globalWindow.SpotifyPlusDebug.forceUpdatePrompt = (version = "9.9.9") => {
     availableRelease = {
       version,
@@ -400,7 +429,8 @@ function installDebugHelpers() {
     openUpdatePrompt(availableRelease);
   };
   globalWindow.SpotifyPlusDebug.resetUpdateCheck = () => {
-    Spicetify.LocalStorage.remove?.(UPDATE_CHECK_CACHE_KEY);
+    Spicetify.LocalStorage.remove?.(getUpdateCheckCacheKey());
+    Spicetify.LocalStorage.remove?.("spotify-plus.update-check-cache");
     Spicetify.LocalStorage.remove?.(UPDATE_DISMISSED_VERSION_KEY);
     availableRelease = null;
     emitUpdateAvailabilityChanged();

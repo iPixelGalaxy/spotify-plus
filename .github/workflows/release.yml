@@ -35,6 +35,19 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Stamp release version
+        shell: pwsh
+        run: |
+          $version = "${{ inputs.version }}"
+          $packageJson = Get-Content package.json -Raw | ConvertFrom-Json
+          $packageJson.version = $version
+          $packageJson | ConvertTo-Json -Depth 100 | Set-Content package.json
+
+          $versionFile = @"
+          export const CURRENT_VERSION = "$version";
+          "@
+          Set-Content -Path src\version.ts -Value $versionFile
+
       - name: Build
         run: npm run build
 
