@@ -47,7 +47,8 @@
 - Filters out non-addable and generated playlists such as:
   - `daylist`
   - `Discover Weekly`
-  - `DJ On Repeat`
+  - `DJ`
+  - `On Repeat`
   - other `Made for you` / non-editable playlist rows when Spotify metadata exposes them
 
 ### Copy Context Menu
