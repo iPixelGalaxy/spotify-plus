@@ -77,9 +77,9 @@ irm https://raw.githubusercontent.com/iPixelGalaxy/spotify-plus/master/install.p
 
 `spotify-plus` enables a few persistent client behaviors that uninstalling the extension will not automatically undo:
 
-- developer tools can remain enabled in Spotify
-- `F5` reload behavior can remain available
-- last-view route memory can persist across Spotify restarts
+- developer tools can remain enabled in Spotify (**Note:** messing around with the toggle to run dev-tools on start may be required)
+- `F5` reload behavior can remain available (honestly, this is just useful)
+- last-view route memory can persist across Spotify restarts (allegedly a native spotify feature, I've never seen this behave consistently)
 
 To fully clear the related Spotify/XPUI client state, fully close Spotify and run:
 
@@ -92,7 +92,7 @@ Remove-Item -Recurse -Force "$env:LOCALAPPDATA\Spotify\Default\Sessions" -ErrorA
 Remove-Item -Recurse -Force "$env:LOCALAPPDATA\Spotify\Default\Session Storage" -ErrorAction SilentlyContinue
 ```
 
-This clears Spotify’s persisted XPUI/session state and can reset client preferences and session-related UI state.
+This clears Spotify’s persisted XPUI/session state and can reset client preferences and session-related UI state (**Including** all user setting and plugin configs).
 
 The installer will:
 
