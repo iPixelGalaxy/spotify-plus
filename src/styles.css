@@ -179,6 +179,7 @@
   inset: 0;
   z-index: 9998;
   background: rgba(0, 0, 0, 0.55);
+  pointer-events: none;
 }
 
 .SpotifyPlusSettingsContainer {
@@ -192,6 +193,7 @@
   overflow: hidden;
   min-height: 0;
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.7);
+  pointer-events: auto;
 }
 
 .SpotifyPlusSettingsHeader {

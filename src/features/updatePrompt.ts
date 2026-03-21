@@ -234,15 +234,16 @@ function getUpdateCheckCacheKey() {
   return `${UPDATE_CHECK_CACHE_KEY_PREFIX}.${getCurrentVersion()}`;
 }
 
-export async function startUpdatePromptController() {
+async function runUpdateCheck(force: boolean, showFeedback: boolean) {
   const now = Date.now();
-  const lastCheckedAt = Number(Spicetify.LocalStorage.get(getUpdateCheckCacheKey()) ?? "0");
-  if (now - lastCheckedAt < UPDATE_CHECK_INTERVAL_MS) {
+  const cacheKey = getUpdateCheckCacheKey();
+  const lastCheckedAt = Number(Spicetify.LocalStorage.get(cacheKey) ?? "0");
+  if (!force && now - lastCheckedAt < UPDATE_CHECK_INTERVAL_MS) {
     emitUpdateAvailabilityChanged();
-    return;
+    return availableRelease;
   }
 
-  Spicetify.LocalStorage.set(getUpdateCheckCacheKey(), String(now));
+  Spicetify.LocalStorage.set(cacheKey, String(now));
 
   try {
     const latestRelease = await fetchLatestRelease();
@@ -250,20 +251,42 @@ export async function startUpdatePromptController() {
     if (!isVersionNewer(latestRelease.version, getCurrentVersion())) {
       availableRelease = null;
       emitUpdateAvailabilityChanged();
-      return;
+      if (showFeedback) {
+        Spicetify.showNotification("Spotify+: no update available");
+      }
+      return availableRelease;
     }
 
     if (dismissedVersion === latestRelease.version) {
       availableRelease = null;
       emitUpdateAvailabilityChanged();
-      return;
+      if (showFeedback) {
+        Spicetify.showNotification("Spotify+: latest version was skipped");
+      }
+      return availableRelease;
     }
 
     availableRelease = latestRelease;
     emitUpdateAvailabilityChanged();
+    if (showFeedback) {
+      Spicetify.showNotification(`Spotify+: update available (${latestRelease.version})`);
+    }
   } catch {
     // Best effort only.
+    if (showFeedback) {
+      Spicetify.showNotification("Spotify+: update check failed", true);
+    }
   }
+
+  return availableRelease;
+}
+
+export async function checkForUpdatesNow(showFeedback = false) {
+  return runUpdateCheck(true, showFeedback);
+}
+
+export async function startUpdatePromptController() {
+  await runUpdateCheck(false, false);
 }
 
 function installDebugHelpers() {

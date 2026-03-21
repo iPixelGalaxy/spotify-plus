@@ -4,7 +4,12 @@ import {
   getSetting,
   setSetting,
 } from "./config";
-import { getCurrentVersion } from "./features/updatePrompt";
+import {
+  checkForUpdatesNow,
+  getAvailableRelease,
+  getCurrentVersion,
+  openUpdatePrompt,
+} from "./features/updatePrompt";
 import { refreshPlaylistFolderCache } from "./playlistFolders";
 
 function makeGroup(scroll: HTMLElement, name: string) {
@@ -30,11 +35,13 @@ function makeRow(scroll: HTMLElement, label: string, control: HTMLElement, stack
   scroll.appendChild(row);
 }
 
-function makeValue(scroll: HTMLElement, label: string, value: string) {
-  const text = document.createElement("span");
-  text.className = "sl-settings-label";
-  text.textContent = value;
-  makeRow(scroll, label, text);
+function makeButton(label: string, onClick: () => void) {
+  const button = document.createElement("button");
+  button.className = "sl-btn";
+  button.type = "button";
+  button.textContent = label;
+  button.addEventListener("click", onClick);
+  return button;
 }
 
 function makeToggle(
@@ -128,7 +135,9 @@ function refillFolderChecklist(container: HTMLElement, disabled: boolean) {
 export function showSettingsPanel() {
   if (document.querySelector(".SpotifyPlusSettingsOverlay")) return;
 
-  const modalPadding = 64;
+  const modalHorizontalPadding = 64;
+  const modalTopPadding = 88;
+  const modalBottomPadding = 136;
   const preferredWidth = 980;
   const minimumHeight = 280;
 
@@ -138,26 +147,51 @@ export function showSettingsPanel() {
   const container = document.createElement("div");
   container.className = "SpotifyPlusSettingsContainer";
 
+  const onDocumentClick = (event: MouseEvent) => {
+    if (!container.contains(event.target as Node | null)) {
+      event.preventDefault();
+      event.stopPropagation();
+      closePanel();
+    }
+  };
+
   const applyPanelBounds = () => {
-    const maxHeight = window.innerHeight - modalPadding * 2;
-    const width = Math.min(preferredWidth, window.innerWidth - modalPadding * 2);
+    const maxHeight = window.innerHeight - modalTopPadding - modalBottomPadding;
+    const width = Math.min(
+      preferredWidth,
+      window.innerWidth - modalHorizontalPadding * 2
+    );
     const naturalHeight =
       header.getBoundingClientRect().height + scroll.scrollHeight + 8;
     const height = Math.min(Math.max(minimumHeight, naturalHeight), maxHeight);
+    const maxTop = Math.max(modalTopPadding, window.innerHeight - modalBottomPadding - height);
+    const top = Math.min(
+      Math.max((window.innerHeight - height) / 2, modalTopPadding),
+      maxTop
+    );
 
     container.style.width = `${width}px`;
     container.style.height = `${height}px`;
-    container.style.left = `${Math.max(modalPadding, (window.innerWidth - width) / 2)}px`;
-    container.style.top = `${Math.max(modalPadding, (window.innerHeight - height) / 2)}px`;
+    container.style.left = `${Math.max(modalHorizontalPadding, (window.innerWidth - width) / 2)}px`;
+    container.style.top = `${top}px`;
+  };
+
+  const onKeyDown = (event: KeyboardEvent) => {
+    if (event.key === "Escape") {
+      closePanel();
+    }
   };
 
   const closePanel = () => {
     window.removeEventListener("resize", applyPanelBounds);
+    window.removeEventListener("keydown", onKeyDown);
+    document.removeEventListener("click", onDocumentClick, true);
     backdrop.remove();
   };
 
   window.addEventListener("resize", applyPanelBounds);
-  backdrop.addEventListener("click", closePanel);
+  window.addEventListener("keydown", onKeyDown);
+  document.addEventListener("click", onDocumentClick, true);
   container.addEventListener("click", (event) => event.stopPropagation());
 
   const header = document.createElement("div");
@@ -200,9 +234,18 @@ export function showSettingsPanel() {
     "overridePlaylistFolderBehavior"
   );
 
-  const refreshButton = document.createElement("button");
-  refreshButton.className = "sl-btn";
-  refreshButton.textContent = "Refresh Folders";
+  const refreshButton = makeButton("Refresh Folders", () => {
+    void (async () => {
+      const folders = await refreshPlaylistFolderCache();
+      refillFolderChecklist(folderChecklist, !overrideToggle.checked);
+
+      if (folders.length > 0) {
+        Spicetify.showNotification(`Spotify+: found ${folders.length} folder candidates`);
+      } else {
+        Spicetify.showNotification("Spotify+: no folder candidates found", true);
+      }
+    })();
+  });
 
   const folderChecklist = document.createElement("div");
   folderChecklist.className = "sl-folderChecklist";
@@ -212,22 +255,40 @@ export function showSettingsPanel() {
     refillFolderChecklist(folderChecklist, !overrideToggle.checked);
   });
 
-  refreshButton.addEventListener("click", async () => {
-    const folders = await refreshPlaylistFolderCache();
-    refillFolderChecklist(folderChecklist, !overrideToggle.checked);
-
-    if (folders.length > 0) {
-      Spicetify.showNotification(`Spotify+: found ${folders.length} folder candidates`);
-    } else {
-      Spicetify.showNotification("Spotify+: no folder candidates found", true);
-    }
-  });
-
   makeRow(scroll, "Scan playlist folders", refreshButton);
   makeRow(scroll, "Folders to show in Add to playlist", folderChecklist, true);
 
   makeGroup(scroll, "About");
-  makeValue(scroll, "Version", getCurrentVersion());
+  const checkNowButton = makeButton("Check Now", () => {
+    const availableRelease = getAvailableRelease();
+    if (availableRelease) {
+      openUpdatePrompt(availableRelease);
+      return;
+    }
+
+    void (async () => {
+      checkNowButton.disabled = true;
+      checkNowButton.textContent = "Checking...";
+
+      const release = await checkForUpdatesNow(false);
+
+      if (release) {
+        checkNowButton.textContent = "Update Now";
+      } else {
+        checkNowButton.textContent = "No Updates Found";
+      }
+
+      window.setTimeout(() => {
+        checkNowButton.disabled = false;
+      }, 150);
+    })();
+  });
+
+  if (getAvailableRelease()) {
+    checkNowButton.textContent = "Update Now";
+  }
+
+  makeRow(scroll, `Version ${getCurrentVersion()}`, checkNowButton);
 
   container.addEventListener("wheel", (event) => event.stopPropagation(), { passive: false });
 

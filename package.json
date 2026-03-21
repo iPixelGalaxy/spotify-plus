@@ -1,6 +1,6 @@
 {
   "name": "spotify-plus",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "private": true,
   "description": "A Spicetify extension for reducing Spotify UI clutter and adding configurable menu cleanup.",
   "scripts": {
