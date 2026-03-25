@@ -178,14 +178,7 @@ Write-Step "Enabling Spotify developer tools..."
 Enable-SpotifyDeveloperMode
 
 Write-Step "Applying Spicetify changes..."
-if ($script:SpicetifyWasPresent) {
-    try {
-        & $spicetifyExe update | Out-Null
-    }
-    catch {
-    }
-}
-else {
+if (-not $script:SpicetifyWasPresent) {
     try {
         & $spicetifyExe backup
     }

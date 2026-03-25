@@ -243,9 +243,7 @@ print_step "Enabling Spotify developer tools..."
 enable_developer_mode
 
 print_step "Applying Spicetify changes..."
-if [ "$SPICETIFY_WAS_PRESENT" -eq 1 ]; then
-  "$SPICETIFY_EXE" update >/dev/null 2>&1 || true
-else
+if [ "$SPICETIFY_WAS_PRESENT" -ne 1 ]; then
   if ! "$SPICETIFY_EXE" backup; then
     print_note "Continuing with existing Spicetify backup state..."
   fi

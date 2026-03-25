@@ -227,6 +227,9 @@ export function showSettingsPanel() {
   makeToggle(scroll, "Hide Lyrics button", "hideLyricsButton");
   makeToggle(scroll, "Hide Miniplayer button", "hideMiniplayerButton");
 
+  makeGroup(scroll, "Tools");
+  makeToggle(scroll, "Enable Devtools On Startup", "enableDevtoolsOnStartup");
+
   makeGroup(scroll, "Playlist Menu");
   const overrideToggle = makeToggle(
     scroll,
