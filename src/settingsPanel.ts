@@ -226,9 +226,14 @@ export function showSettingsPanel() {
   makeToggle(scroll, "Hide Friend Activity button", "hideFriendActivityButton");
   makeToggle(scroll, "Hide Lyrics button", "hideLyricsButton");
   makeToggle(scroll, "Hide Miniplayer button", "hideMiniplayerButton");
+  makeToggle(scroll, "Restore old device picker", "restoreOldDevicePicker");
 
   makeGroup(scroll, "Tools");
-  makeToggle(scroll, "Enable Devtools On Startup", "enableDevtoolsOnStartup");
+  makeToggle(
+    scroll,
+    "Toggle me a few times while dev tools are enabled to keep them on",
+    "enableDevtoolsOnStartup"
+  );
 
   makeGroup(scroll, "Playlist Menu");
   const overrideToggle = makeToggle(

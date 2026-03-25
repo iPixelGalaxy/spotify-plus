@@ -25,6 +25,7 @@
 - Hide the `Friend Activity` button.
 - Hide the `Lyrics` button.
 - Hide the `Miniplayer` button.
+- Restore the old compact `Connect to a device` picker instead of Spotify’s newer sidebar version.
 - Reload Spotify with `F5`.
 - Break into devtools with `F8`.
 - Best-effort devtools opening on startup when Spotify exposes a working API.
