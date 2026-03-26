@@ -31,6 +31,9 @@ export interface PlaylistFolderEntry {
 
 export interface SpotifyPlusSettings {
   enableDevtoolsOnStartup: boolean;
+  reloadAppWithF5: boolean;
+  pauseAppWithF8: boolean;
+  restorePreviousSession: boolean;
   hideFriendActivityButton: boolean;
   hideLyricsButton: boolean;
   hideMiniplayerButton: boolean;
@@ -48,7 +51,10 @@ export interface SpotifyPlusSettings {
 }
 
 export const defaultSettings: SpotifyPlusSettings = {
-  enableDevtoolsOnStartup: true,
+  enableDevtoolsOnStartup: false,
+  reloadAppWithF5: true,
+  pauseAppWithF8: true,
+  restorePreviousSession: true,
   hideFriendActivityButton: false,
   hideLyricsButton: false,
   hideMiniplayerButton: false,
@@ -66,10 +72,7 @@ export const defaultSettings: SpotifyPlusSettings = {
 };
 
 const legacySettingKeys = [
-  "reloadAppWithF5",
-  "pauseAppWithF8",
   "windowTitleOverride",
-  "restorePreviousSession",
 ] as const;
 
 function storageKey(name: keyof SpotifyPlusSettings) {
@@ -152,6 +155,9 @@ export function ensureDefaultSettings() {
 export function getSettings(): SpotifyPlusSettings {
   return {
     enableDevtoolsOnStartup: getSetting("enableDevtoolsOnStartup"),
+    reloadAppWithF5: getSetting("reloadAppWithF5"),
+    pauseAppWithF8: getSetting("pauseAppWithF8"),
+    restorePreviousSession: getSetting("restorePreviousSession"),
     hideFriendActivityButton: getSetting("hideFriendActivityButton"),
     hideLyricsButton: getSetting("hideLyricsButton"),
     hideMiniplayerButton: getSetting("hideMiniplayerButton"),

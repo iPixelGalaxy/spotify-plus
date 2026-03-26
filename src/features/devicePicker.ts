@@ -11,6 +11,8 @@ import { SETTINGS_CHANGED_EVENT, getSettings } from "../config";
 const CONNECT_BUTTON_SELECTOR =
   'button[aria-label="Connect to a device"], button[data-restore-focus-key="device_picker"]';
 const CONNECT_SIDEBAR_SELECTOR = 'aside[aria-label="Connect to a device"]';
+const CONNECT_TOOLTIP_LABEL = "Connect to a device";
+const CONNECT_PROXY_SELECTOR = 'button[data-spotify-plus-device-picker-proxy="true"]';
 
 let popupRoot: HTMLDivElement | null = null;
 let popupButton: HTMLElement | null = null;
@@ -74,6 +76,28 @@ function escapeHtml(value: string) {
     .replaceAll("'", "&#39;");
 }
 
+function isConnectTooltipRoot(element: Element) {
+  if (!element.matches("[data-tippy-root]")) {
+    return false;
+  }
+
+  const tooltip = element.querySelector<HTMLElement>('[role="tooltip"]');
+  return tooltip?.textContent?.trim() === CONNECT_TOOLTIP_LABEL;
+}
+
+function hideConnectTooltips() {
+  const tooltipRoots = Array.from(
+    document.querySelectorAll<HTMLElement>("[data-tippy-root]")
+  ).filter((element) => isConnectTooltipRoot(element));
+
+  for (const tooltipRoot of tooltipRoots) {
+    tooltipRoot.style.display = "none";
+    window.setTimeout(() => {
+      tooltipRoot.remove();
+    }, 0);
+  }
+}
+
 function getDeviceIconPath(type: string | undefined) {
   const normalized = (type ?? "").toLowerCase();
   if (normalized.includes("phone")) {
@@ -98,6 +122,151 @@ function setButtonOpenState(button: HTMLElement, open: boolean) {
   button.classList.toggle("main-genericButton-buttonActiveDot", open);
   button.setAttribute("aria-pressed", open ? "true" : "false");
   button.dataset.spotifyPlusDevicePickerOpen = open ? "true" : "false";
+  const tooltip = button.querySelector<HTMLElement>(".SpotifyPlusManagedDeviceTooltipRoot");
+
+  if (open) {
+    button.removeAttribute("aria-label");
+    button.removeAttribute("title");
+    button.removeAttribute("aria-describedby");
+    if (tooltip) {
+      tooltip.style.display = "none";
+    }
+    return;
+  }
+
+  button.setAttribute("aria-label", CONNECT_TOOLTIP_LABEL);
+  if (tooltip) {
+    tooltip.style.display = "none";
+  }
+}
+
+function createManagedButton(sourceButton: HTMLElement) {
+  const sourceStyle = window.getComputedStyle(sourceButton);
+  const button = document.createElement("button");
+  button.type = "button";
+  button.dataset.spotifyPlusDevicePickerProxy = "true";
+  button.dataset.encoreId = sourceButton.getAttribute("data-encore-id") ?? "buttonTertiary";
+  button.className = sourceButton.className;
+  button.innerHTML = sourceButton.innerHTML;
+
+  const tooltip = document.createElement("div");
+  tooltip.className = "SpotifyPlusManagedDeviceTooltipRoot";
+  tooltip.setAttribute("aria-hidden", "true");
+  tooltip.style.position = "absolute";
+  tooltip.style.left = "50%";
+  tooltip.style.bottom = "calc(100% + 10px)";
+  tooltip.style.transform = "translateX(-50%)";
+  tooltip.style.display = "none";
+  tooltip.style.width = "max-content";
+  tooltip.style.maxWidth = "none";
+  tooltip.style.pointerEvents = "none";
+  tooltip.style.zIndex = "9999";
+  tooltip.innerHTML = `
+    <div
+      role="tooltip"
+      style="
+        display: inline-block;
+        width: max-content;
+        max-width: none;
+        white-space: nowrap;
+        background: #282828;
+        color: rgb(255, 255, 255);
+        border-radius: 4px;
+        padding: 7px 8px;
+        font-size: ${sourceStyle.fontSize};
+        line-height: 1;
+        font-weight: ${sourceStyle.fontWeight};
+        font-family: ${sourceStyle.fontFamily};
+        letter-spacing: normal;
+        text-rendering: auto;
+        -webkit-font-smoothing: auto;
+        border: 0;
+        box-shadow: none;
+      "
+    >
+      ${CONNECT_TOOLTIP_LABEL}
+    </div>
+  `;
+
+  button.style.position = "relative";
+  button.style.overflow = "visible";
+  button.appendChild(tooltip);
+
+  setButtonOpenState(button, false);
+  button.addEventListener("mouseover", () => {
+    if (button.dataset.spotifyPlusDevicePickerOpen !== "true") {
+      tooltip.style.display = "inline-block";
+    }
+  });
+  button.addEventListener("mouseout", () => {
+    tooltip.style.display = "none";
+  });
+  button.addEventListener("focus", () => {
+    if (button.dataset.spotifyPlusDevicePickerOpen !== "true") {
+      tooltip.style.display = "inline-block";
+    }
+  });
+  button.addEventListener("blur", () => {
+    tooltip.style.display = "none";
+  });
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    tooltip.style.display = "none";
+    void openDevicePicker(button);
+  });
+  return button;
+}
+
+function installManagedButton(sourceButton: HTMLElement) {
+  if (sourceButton.dataset.spotifyPlusDevicePickerManaged === "true") {
+    return;
+  }
+
+  const parent = sourceButton.parentElement;
+  if (!parent) {
+    return;
+  }
+
+  const managedButton = createManagedButton(sourceButton);
+  sourceButton.dataset.spotifyPlusDevicePickerManaged = "true";
+  sourceButton.style.display = "none";
+  sourceButton.setAttribute("aria-hidden", "true");
+  sourceButton.tabIndex = -1;
+  parent.insertBefore(managedButton, sourceButton);
+}
+
+function installManagedButtons(root: ParentNode = document) {
+  const sourceButtons = Array.from(
+    root.querySelectorAll<HTMLElement>(CONNECT_BUTTON_SELECTOR)
+  ).filter((button) => !button.matches(CONNECT_PROXY_SELECTOR));
+
+  for (const sourceButton of sourceButtons) {
+    installManagedButton(sourceButton);
+  }
+}
+
+function restoreManagedButtons() {
+  const sourceButtons = Array.from(
+    document.querySelectorAll<HTMLElement>(
+      `${CONNECT_BUTTON_SELECTOR}[data-spotify-plus-device-picker-managed="true"]`
+    )
+  );
+
+  for (const sourceButton of sourceButtons) {
+    const proxyButton = sourceButton.previousElementSibling;
+    if (proxyButton instanceof HTMLElement && proxyButton.matches(CONNECT_PROXY_SELECTOR)) {
+      if (popupButton === proxyButton) {
+        popupButton = null;
+      }
+      proxyButton.remove();
+    }
+
+    sourceButton.style.display = "";
+    sourceButton.removeAttribute("aria-hidden");
+    sourceButton.removeAttribute("data-spotify-plus-device-picker-managed");
+    sourceButton.tabIndex = 0;
+  }
 }
 
 function positionPopup() {
@@ -130,11 +299,13 @@ function closeDevicePicker() {
 function syncDevicePickerMode() {
   if (isEnabled()) {
     hideConnectSidebar();
+    installManagedButtons();
     return;
   }
 
   closeDevicePicker();
   showConnectSidebar();
+  restoreManagedButtons();
 }
 
 async function transferPlayback(deviceId: string) {
@@ -251,6 +422,7 @@ async function openDevicePicker(button: HTMLElement) {
   isOpening = true;
   closeDevicePicker();
   hideConnectSidebar();
+  hideConnectTooltips();
 
   popupButton = button;
   setButtonOpenState(button, true);
@@ -281,9 +453,9 @@ function onDocumentClick(event: MouseEvent) {
   const target = event.target;
   if (!(target instanceof Node)) return;
 
-  const button = (target instanceof Element
-    ? target.closest<HTMLElement>(CONNECT_BUTTON_SELECTOR)
-    : null);
+  const button = target instanceof Element
+    ? target.closest<HTMLElement>(CONNECT_PROXY_SELECTOR)
+    : null;
 
   if (button) {
     event.preventDefault();
@@ -316,6 +488,18 @@ export function startDevicePickerController() {
         if (!(node instanceof Element)) continue;
         if (isEnabled() && (isConnectSidebar(node) || node.querySelector(CONNECT_SIDEBAR_SELECTOR))) {
           hideConnectSidebar();
+        }
+        if (isEnabled()) {
+          if (node.matches(CONNECT_BUTTON_SELECTOR) && !node.matches(CONNECT_PROXY_SELECTOR)) {
+            installManagedButton(node);
+          }
+
+          if (node.querySelector(CONNECT_BUTTON_SELECTOR)) {
+            installManagedButtons(node);
+          }
+        }
+        if (popupRoot && (isConnectTooltipRoot(node) || node.querySelector("[data-tippy-root]"))) {
+          hideConnectTooltips();
         }
       }
     }

@@ -432,7 +432,7 @@
   border-radius: 999px;
 }
 
-.sl-settings-group {
+.SpotifyPlusSettingsContainer .sl-settings-group {
   font-size: 0.72rem;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.4);
@@ -444,11 +444,11 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.sl-settings-group:first-child {
+.SpotifyPlusSettingsContainer .sl-settings-group:first-child {
   margin-top: 8px;
 }
 
-.sl-settings-row {
+.SpotifyPlusSettingsContainer .sl-settings-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -457,26 +457,26 @@
   border-radius: 6px;
 }
 
-.sl-settings-row:hover {
+.SpotifyPlusSettingsContainer .sl-settings-row:hover {
   background: rgba(255, 255, 255, 0.06);
 }
 
-.sl-settings-row-stack {
+.SpotifyPlusSettingsContainer .sl-settings-row-stack {
   align-items: stretch;
   flex-direction: column;
 }
 
-.sl-settings-row-stack .sl-settings-label {
+.SpotifyPlusSettingsContainer .sl-settings-row-stack .sl-settings-label {
   flex: 0 0 auto;
 }
 
-.sl-settings-label {
+.SpotifyPlusSettingsContainer .sl-settings-label {
   font-size: 0.875rem;
   color: rgba(255, 255, 255, 0.85);
   flex: 1;
 }
 
-.sl-toggle {
+.SpotifyPlusSettingsContainer .sl-toggle {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -487,7 +487,7 @@
   cursor: pointer;
 }
 
-.sl-toggle input {
+.SpotifyPlusSettingsContainer .sl-toggle input {
   position: absolute;
   inset: 0;
   opacity: 0;
@@ -499,7 +499,7 @@
   pointer-events: none;
 }
 
-.sl-toggle span {
+.SpotifyPlusSettingsContainer .sl-toggle span {
   position: absolute;
   inset: 0;
   background: rgba(255, 255, 255, 0.15);
@@ -507,7 +507,7 @@
   transition: background 0.15s ease;
 }
 
-.sl-toggle span::before {
+.SpotifyPlusSettingsContainer .sl-toggle span::before {
   content: "";
   position: absolute;
   width: 14px;
@@ -519,17 +519,17 @@
   transition: transform 0.15s ease;
 }
 
-.sl-toggle input:checked + span {
+.SpotifyPlusSettingsContainer .sl-toggle input:checked + span {
   background: #1ed760;
 }
 
-.sl-toggle input:checked + span::before {
+.SpotifyPlusSettingsContainer .sl-toggle input:checked + span::before {
   transform: translateX(18px);
 }
 
-.sl-select,
-.sl-input,
-.sl-btn {
+.SpotifyPlusSettingsContainer .sl-select,
+.SpotifyPlusSettingsContainer .sl-input,
+.SpotifyPlusSettingsContainer .sl-btn {
   background: rgba(255, 255, 255, 0.07);
   color: rgba(255, 255, 255, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -538,43 +538,43 @@
   flex-shrink: 0;
 }
 
-.sl-select {
+.SpotifyPlusSettingsContainer .sl-select {
   appearance: none;
   padding: 6px 28px 6px 10px;
   min-width: 220px;
   cursor: pointer;
 }
 
-.sl-input {
+.SpotifyPlusSettingsContainer .sl-input {
   padding: 6px 10px;
   min-width: 220px;
 }
 
-.sl-btn {
+.SpotifyPlusSettingsContainer .sl-btn {
   padding: 6px 14px;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
 }
 
-.sl-btn:hover,
-.sl-select:hover {
+.SpotifyPlusSettingsContainer .sl-btn:hover,
+.SpotifyPlusSettingsContainer .sl-select:hover {
   background: rgba(255, 255, 255, 0.13);
 }
 
-.sl-btn.is-muted {
+.SpotifyPlusSettingsContainer .sl-btn.is-muted {
   background: transparent;
   color: rgba(255, 255, 255, 0.6);
   border-color: rgba(255, 255, 255, 0.08);
   cursor: default;
 }
 
-.sl-btn.is-muted:hover {
+.SpotifyPlusSettingsContainer .sl-btn.is-muted:hover {
   background: transparent;
   color: rgba(255, 255, 255, 0.9);
   border-color: rgba(255, 255, 255, 0.14);
 }
 
-.sl-folderChecklist {
+.SpotifyPlusSettingsContainer .sl-folderChecklist {
   width: 100%;
   max-height: 240px;
   overflow-y: auto;
@@ -584,17 +584,17 @@
   background: rgba(255, 255, 255, 0.04);
 }
 
-.sl-folderChecklist.is-disabled {
+.SpotifyPlusSettingsContainer .sl-folderChecklist.is-disabled {
   opacity: 0.45;
 }
 
-.sl-folderChecklistEmpty {
+.SpotifyPlusSettingsContainer .sl-folderChecklistEmpty {
   font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.55);
   padding: 6px 4px;
 }
 
-.sl-folderOption {
+.SpotifyPlusSettingsContainer .sl-folderOption {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -602,15 +602,15 @@
   border-radius: 6px;
 }
 
-.sl-folderOption:hover {
+.SpotifyPlusSettingsContainer .sl-folderOption:hover {
   background: rgba(255, 255, 255, 0.06);
 }
 
-.sl-folderOption input {
+.SpotifyPlusSettingsContainer .sl-folderOption input {
   margin: 0;
 }
 
-.sl-folderOptionText {
+.SpotifyPlusSettingsContainer .sl-folderOptionText {
   font-size: 0.82rem;
   color: rgba(255, 255, 255, 0.88);
 }
