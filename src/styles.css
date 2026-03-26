@@ -234,6 +234,22 @@
   background: rgba(255, 255, 255, 0.08);
 }
 
+.SpotifyPlusLocalArtistLink {
+  color: inherit;
+  text-decoration: none;
+}
+
+.SpotifyPlusLocalArtistLink:hover {
+  text-decoration: underline;
+}
+
+.SpotifyPlusLocalArtistLink:focus,
+.SpotifyPlusLocalArtistLink:active {
+  color: inherit;
+  text-decoration: none;
+  outline: none;
+}
+
 .SpotifyPlusDevicePickerArrowPill {
   position: absolute;
   left: 50%;

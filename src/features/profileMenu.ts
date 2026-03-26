@@ -273,6 +273,38 @@ function isDivider(element: HTMLElement) {
   );
 }
 
+function isDisplayedElement(element: HTMLElement | null | undefined) {
+  return Boolean(element && element.style.display !== "none");
+}
+
+function trimVisibleDividers(menu: HTMLElement) {
+  const directChildren = Array.from(menu.children).filter(
+    (child): child is HTMLElement => child instanceof HTMLElement
+  );
+
+  for (const child of directChildren) {
+    if (!isDivider(child)) {
+      continue;
+    }
+
+    const previousVisible = [...directChildren]
+      .slice(0, directChildren.indexOf(child))
+      .reverse()
+      .find((candidate) => isDisplayedElement(candidate));
+    const nextVisible = directChildren
+      .slice(directChildren.indexOf(child) + 1)
+      .find((candidate) => isDisplayedElement(candidate));
+
+    const shouldHide =
+      !previousVisible ||
+      !nextVisible ||
+      isDivider(previousVisible) ||
+      isDivider(nextVisible);
+
+    toggleElementDisplay(child, shouldHide);
+  }
+}
+
 function applyProfileMenuCleanup() {
   const settings = getSettings();
   const menus = Array.from(
@@ -315,6 +347,8 @@ function applyProfileMenuCleanup() {
         toggleElementDisplay(divider, settings.hideYourUpdatesSection);
       }
     }
+
+    trimVisibleDividers(menu);
   }
 }
 
