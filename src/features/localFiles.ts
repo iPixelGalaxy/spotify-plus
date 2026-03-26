@@ -422,7 +422,7 @@ function renderArtistLinks(element: HTMLElement, info: LocalArtistInfo) {
     return;
   }
 
-  if (currentSignature === nextSignature && (info.names.length <= 1 || alreadyManagedLinks)) {
+  if (currentSignature === nextSignature && alreadyManagedLinks) {
     return;
   }
 
