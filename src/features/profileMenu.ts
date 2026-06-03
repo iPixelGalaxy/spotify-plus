@@ -15,6 +15,7 @@ const menuItemSettings: Array<{
     | "hideHomeConfigMenuItem"
     | "hideAccountMenuItem"
     | "hideProfileMenuItem"
+    | "hideRecentsMenuItem"
     | "hideSupportMenuItem"
     | "hidePrivateSessionMenuItem"
     | "hideLogOutMenuItem"
@@ -23,6 +24,7 @@ const menuItemSettings: Array<{
   { label: "home config", key: "hideHomeConfigMenuItem" },
   { label: "account", key: "hideAccountMenuItem" },
   { label: "profile", key: "hideProfileMenuItem" },
+  { label: "recents", key: "hideRecentsMenuItem" },
   { label: "support", key: "hideSupportMenuItem" },
   { label: "private session", key: "hidePrivateSessionMenuItem" },
   { label: "log out", key: "hideLogOutMenuItem" },
@@ -31,6 +33,7 @@ const menuItemSettings: Array<{
 const profileMenuIdentityLabels = [
   "account",
   "profile",
+  "recents",
   "support",
   "home config",
   "private session",

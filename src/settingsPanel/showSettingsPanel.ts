@@ -89,6 +89,7 @@ export function showSettingsPanel() {
   makeToggle(scroll, "Hide Home config", "hideHomeConfigMenuItem");
   makeToggle(scroll, "Hide Account", "hideAccountMenuItem");
   makeToggle(scroll, "Hide Profile", "hideProfileMenuItem");
+  makeToggle(scroll, "Hide Recents", "hideRecentsMenuItem");
   makeToggle(scroll, "Hide Support", "hideSupportMenuItem");
   makeToggle(scroll, "Hide Private Session", "hidePrivateSessionMenuItem");
   makeToggle(scroll, "Hide Log out", "hideLogOutMenuItem");

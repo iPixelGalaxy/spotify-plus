@@ -16,6 +16,8 @@ const CONNECT_PROXY_SELECTOR = 'button[data-spotify-plus-device-picker-proxy="tr
 
 let popupRoot: HTMLDivElement | null = null;
 let popupButton: HTMLElement | null = null;
+let managedTooltipRoot: HTMLDivElement | null = null;
+let managedTooltipButton: HTMLElement | null = null;
 let openRefreshHandle = 0;
 let isOpening = false;
 
@@ -122,26 +124,73 @@ function setButtonOpenState(button: HTMLElement, open: boolean) {
   button.classList.toggle("main-genericButton-buttonActiveDot", open);
   button.setAttribute("aria-pressed", open ? "true" : "false");
   button.dataset.spotifyPlusDevicePickerOpen = open ? "true" : "false";
-  const tooltip = button.querySelector<HTMLElement>(".SpotifyPlusManagedDeviceTooltipRoot");
 
   if (open) {
     button.removeAttribute("aria-label");
     button.removeAttribute("title");
     button.removeAttribute("aria-describedby");
-    if (tooltip) {
-      tooltip.style.display = "none";
-    }
+    hideManagedTooltip();
     return;
   }
 
   button.setAttribute("aria-label", CONNECT_TOOLTIP_LABEL);
-  if (tooltip) {
-    tooltip.style.display = "none";
+  hideManagedTooltip();
+}
+
+function positionManagedTooltip() {
+  if (!managedTooltipRoot || !managedTooltipButton?.isConnected) {
+    hideManagedTooltip();
+    return;
   }
+
+  const buttonRect = managedTooltipButton.getBoundingClientRect();
+  const tooltipRect = managedTooltipRoot.getBoundingClientRect();
+  const gap = 10;
+  const left = Math.min(
+    window.innerWidth - tooltipRect.width - 8,
+    Math.max(8, buttonRect.left + buttonRect.width / 2 - tooltipRect.width / 2)
+  );
+  const top = Math.max(8, buttonRect.top - tooltipRect.height - gap);
+
+  managedTooltipRoot.style.left = `${left}px`;
+  managedTooltipRoot.style.top = `${top}px`;
+}
+
+function showManagedTooltip(button: HTMLElement) {
+  if (button.dataset.spotifyPlusDevicePickerOpen === "true") {
+    return;
+  }
+
+  if (!managedTooltipRoot) {
+    managedTooltipRoot = document.createElement("div");
+    managedTooltipRoot.className = "SpotifyPlusManagedDeviceTooltipRoot";
+    managedTooltipRoot.setAttribute("data-tippy-root", "");
+    managedTooltipRoot.style.pointerEvents = "none";
+    managedTooltipRoot.style.zIndex = "9999";
+    managedTooltipRoot.style.position = "fixed";
+    managedTooltipRoot.style.inset = "0 auto auto 0";
+    managedTooltipRoot.style.margin = "0";
+    managedTooltipRoot.innerHTML = `
+      <div id="context-menu" data-placement="top">
+        <div class="main-contextMenu-tippy">
+          <span id="hover-or-focus-tooltip" role="tooltip">${CONNECT_TOOLTIP_LABEL}</span>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(managedTooltipRoot);
+  }
+
+  managedTooltipButton = button;
+  positionManagedTooltip();
+}
+
+function hideManagedTooltip() {
+  managedTooltipRoot?.remove();
+  managedTooltipRoot = null;
+  managedTooltipButton = null;
 }
 
 function createManagedButton(sourceButton: HTMLElement) {
-  const sourceStyle = window.getComputedStyle(sourceButton);
   const button = document.createElement("button");
   button.type = "button";
   button.dataset.spotifyPlusDevicePickerProxy = "true";
@@ -149,70 +198,26 @@ function createManagedButton(sourceButton: HTMLElement) {
   button.className = sourceButton.className;
   button.innerHTML = sourceButton.innerHTML;
 
-  const tooltip = document.createElement("div");
-  tooltip.className = "SpotifyPlusManagedDeviceTooltipRoot";
-  tooltip.setAttribute("aria-hidden", "true");
-  tooltip.style.position = "absolute";
-  tooltip.style.left = "50%";
-  tooltip.style.bottom = "calc(100% + 10px)";
-  tooltip.style.transform = "translateX(-50%)";
-  tooltip.style.display = "none";
-  tooltip.style.width = "max-content";
-  tooltip.style.maxWidth = "none";
-  tooltip.style.pointerEvents = "none";
-  tooltip.style.zIndex = "9999";
-  tooltip.innerHTML = `
-    <div
-      role="tooltip"
-      style="
-        display: inline-block;
-        width: max-content;
-        max-width: none;
-        white-space: nowrap;
-        background: #282828;
-        color: rgb(255, 255, 255);
-        border-radius: 4px;
-        padding: 7px 8px;
-        font-size: ${sourceStyle.fontSize};
-        line-height: 1;
-        font-weight: ${sourceStyle.fontWeight};
-        font-family: ${sourceStyle.fontFamily};
-        letter-spacing: normal;
-        text-rendering: auto;
-        -webkit-font-smoothing: auto;
-        border: 0;
-        box-shadow: none;
-      "
-    >
-      ${CONNECT_TOOLTIP_LABEL}
-    </div>
-  `;
-
   button.style.position = "relative";
   button.style.overflow = "visible";
-  button.appendChild(tooltip);
 
   setButtonOpenState(button, false);
   button.addEventListener("mouseover", () => {
-    if (button.dataset.spotifyPlusDevicePickerOpen !== "true") {
-      tooltip.style.display = "inline-block";
-    }
+    showManagedTooltip(button);
   });
   button.addEventListener("mouseout", () => {
-    tooltip.style.display = "none";
+    hideManagedTooltip();
   });
   button.addEventListener("focus", () => {
-    if (button.dataset.spotifyPlusDevicePickerOpen !== "true") {
-      tooltip.style.display = "inline-block";
-    }
+    showManagedTooltip(button);
   });
   button.addEventListener("blur", () => {
-    tooltip.style.display = "none";
+    hideManagedTooltip();
   });
   button.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
-    tooltip.style.display = "none";
+    hideManagedTooltip();
     void openDevicePicker(button);
   });
   return button;
@@ -258,6 +263,9 @@ function restoreManagedButtons() {
     if (proxyButton instanceof HTMLElement && proxyButton.matches(CONNECT_PROXY_SELECTOR)) {
       if (popupButton === proxyButton) {
         popupButton = null;
+      }
+      if (managedTooltipButton === proxyButton) {
+        hideManagedTooltip();
       }
       proxyButton.remove();
     }
@@ -477,6 +485,7 @@ function onDocumentKeydown(event: KeyboardEvent) {
 
 function onWindowChanged() {
   positionPopup();
+  positionManagedTooltip();
 }
 
 export function startDevicePickerController() {

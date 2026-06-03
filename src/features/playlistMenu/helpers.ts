@@ -128,8 +128,12 @@ export function getMenuChildren(target: HTMLElement) {
 }
 
 export function getItemLabel(item: HTMLElement) {
-  const labelElement = item.querySelector<HTMLElement>(
-    ".main-contextMenu-menuItemLabel, [data-encore-id='text'], .TypeElement-type-mesto"
+  const button =
+    item.querySelector<HTMLElement>(":scope > .main-contextMenu-menuItemButton") ??
+    item.querySelector<HTMLElement>(".main-contextMenu-menuItemButton") ??
+    item;
+  const labelElement = button.querySelector<HTMLElement>(
+    ".main-contextMenu-menuItemLabel, [data-encore-id='text'], [data-encore-id='type'], .TypeElement-type-mesto"
   );
   return normalizeText(labelElement?.textContent);
 }

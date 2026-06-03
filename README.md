@@ -16,6 +16,7 @@
 - Hide `Home config`.
 - Hide `Account`.
 - Hide `Profile`.
+- Hide `Recents`.
 - Hide `Support`.
 - Hide `Private Session`.
 - Hide `Log out`.

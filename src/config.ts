@@ -42,6 +42,7 @@ export interface SpotifyPlusSettings {
   hideHomeConfigMenuItem: boolean;
   hideAccountMenuItem: boolean;
   hideProfileMenuItem: boolean;
+  hideRecentsMenuItem: boolean;
   hideSupportMenuItem: boolean;
   hidePrivateSessionMenuItem: boolean;
   hideLogOutMenuItem: boolean;
@@ -63,6 +64,7 @@ export const defaultSettings: SpotifyPlusSettings = {
   hideHomeConfigMenuItem: false,
   hideAccountMenuItem: false,
   hideProfileMenuItem: false,
+  hideRecentsMenuItem: false,
   hideSupportMenuItem: false,
   hidePrivateSessionMenuItem: false,
   hideLogOutMenuItem: false,
@@ -166,6 +168,7 @@ export function getSettings(): SpotifyPlusSettings {
     hideHomeConfigMenuItem: getSetting("hideHomeConfigMenuItem"),
     hideAccountMenuItem: getSetting("hideAccountMenuItem"),
     hideProfileMenuItem: getSetting("hideProfileMenuItem"),
+    hideRecentsMenuItem: getSetting("hideRecentsMenuItem"),
     hideSupportMenuItem: getSetting("hideSupportMenuItem"),
     hidePrivateSessionMenuItem: getSetting("hidePrivateSessionMenuItem"),
     hideLogOutMenuItem: getSetting("hideLogOutMenuItem"),

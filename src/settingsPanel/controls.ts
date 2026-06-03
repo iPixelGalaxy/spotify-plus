@@ -50,6 +50,7 @@ export function makeToggle(
   input.checked = Boolean(getSetting(settingKey));
 
   const indicator = document.createElement("span");
+  indicator.className = "sl-toggle-indicator";
 
   input.addEventListener("change", () => {
     setSetting(settingKey, input.checked as never);
