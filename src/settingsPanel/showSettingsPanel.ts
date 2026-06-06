@@ -1,5 +1,5 @@
 import { refreshPlaylistFolderCache } from "../playlistFolders";
-import { makeButton, makeGroup, makeRow, makeToggle } from "./controls";
+import { makeButton, makeGroup, makeRow, makeTextInput, makeToggle } from "./controls";
 import { refillFolderChecklist } from "./playlistFolders";
 import { getVersionLabel, makeCheckNowButton } from "./updateActions";
 
@@ -101,6 +101,8 @@ export function showSettingsPanel() {
   makeToggle(scroll, "Restore old device picker", "restoreOldDevicePicker");
 
   makeGroup(scroll, "Tools");
+  makeToggle(scroll, "Force Spotify window title", "forceWindowTitle");
+  makeTextInput(scroll, "Window title", "windowTitle", "Spotify");
   makeToggle(
     scroll,
     "Toggle me a few times while dev tools are enabled to keep them on",

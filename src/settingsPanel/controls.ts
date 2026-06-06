@@ -67,3 +67,29 @@ export function makeToggle(
   makeRow(scroll, label, wrapper);
   return input;
 }
+
+export function makeTextInput(
+  scroll: HTMLElement,
+  label: string,
+  settingKey: keyof typeof defaultSettings,
+  placeholder = ""
+) {
+  const input = document.createElement("input");
+  input.className = "sl-input";
+  input.type = "text";
+  input.value = String(getSetting(settingKey) ?? "");
+  input.placeholder = placeholder;
+
+  input.addEventListener("change", () => {
+    setSetting(settingKey, input.value as never);
+  });
+
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      input.blur();
+    }
+  });
+
+  makeRow(scroll, label, input);
+  return input;
+}

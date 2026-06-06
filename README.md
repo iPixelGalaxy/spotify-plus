@@ -29,6 +29,7 @@
 - Restore the old compact `Connect to a device` picker instead of Spotify’s newer sidebar version.
 - Reload Spotify with `F5`.
 - Break into devtools with `F8`.
+- Force a fixed Spotify window title for external tools that read the window name.
 - Best-effort devtools opening on startup when Spotify exposes a working API.
 - Restore the previous Spotify route across launches.
 - Show an in-app update prompt when a newer GitHub release is available.

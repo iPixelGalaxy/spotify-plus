@@ -34,6 +34,8 @@ export interface SpotifyPlusSettings {
   reloadAppWithF5: boolean;
   pauseAppWithF8: boolean;
   restorePreviousSession: boolean;
+  forceWindowTitle: boolean;
+  windowTitle: string;
   hideFriendActivityButton: boolean;
   hideLyricsButton: boolean;
   hideMiniplayerButton: boolean;
@@ -56,6 +58,8 @@ export const defaultSettings: SpotifyPlusSettings = {
   reloadAppWithF5: true,
   pauseAppWithF8: true,
   restorePreviousSession: true,
+  forceWindowTitle: false,
+  windowTitle: "Spotify",
   hideFriendActivityButton: false,
   hideLyricsButton: false,
   hideMiniplayerButton: false,
@@ -160,6 +164,8 @@ export function getSettings(): SpotifyPlusSettings {
     reloadAppWithF5: getSetting("reloadAppWithF5"),
     pauseAppWithF8: getSetting("pauseAppWithF8"),
     restorePreviousSession: getSetting("restorePreviousSession"),
+    forceWindowTitle: getSetting("forceWindowTitle"),
+    windowTitle: getSetting("windowTitle"),
     hideFriendActivityButton: getSetting("hideFriendActivityButton"),
     hideLyricsButton: getSetting("hideLyricsButton"),
     hideMiniplayerButton: getSetting("hideMiniplayerButton"),
