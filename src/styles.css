@@ -4,6 +4,10 @@
   gap: 10px !important;
 }
 
+.spotify-plus-hide-lyrics-button [data-testid="lyrics-button"] {
+  display: none !important;
+}
+
 .spotify-plus-copy-menu-wrapper::before {
   content: "";
   width: calc(var(--encore-graphic-size-decorative-smaller) + 3px);

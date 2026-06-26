@@ -38,6 +38,8 @@ const playerCleanupKeys: Array<
 let observer: MutationObserver | null = null;
 let hasAppliedCleanup = false;
 
+const HIDE_LYRICS_CLASS = "spotify-plus-hide-lyrics-button";
+
 function elementTextBlob(element: Element) {
   return ` ${normalizeText(
     [
@@ -55,25 +57,47 @@ function elementTextBlob(element: Element) {
 function hasActivePlayerCleanup(
   settings: Pick<
     SpotifyPlusSettings,
-    "hideFriendActivityButton" | "hideLyricsButton" | "hideMiniplayerButton"
+    "hideFriendActivityButton" | "hideMiniplayerButton"
   >
 ) {
-  return (
-    settings.hideFriendActivityButton ||
-    settings.hideLyricsButton ||
-    settings.hideMiniplayerButton
+  return settings.hideFriendActivityButton || settings.hideMiniplayerButton;
+}
+
+function syncLyricsButtonClass(settings = getSettings()) {
+  document.documentElement.classList.toggle(
+    HIDE_LYRICS_CLASS,
+    settings.hideLyricsButton
   );
 }
 
-function applyPlayerButtonCleanup(settings = getSettings()) {
-  // Explicit selector requested by user to avoid hiding lyrics plugins/buttons.
-  const lyricsButtons = Array.from(
-    document.querySelectorAll<HTMLElement>(".main-nowPlayingBar-lyricsButton")
-  );
-  for (const lyricsButton of lyricsButtons) {
-    toggleElementDisplay(lyricsButton, settings.hideLyricsButton);
+function restoreLegacySpicyLyricsButtons() {
+  const spicyLyricsButtons = new Set<HTMLElement>();
+
+  for (const selector of [
+    "#SpicyLyrics_PopupLyricsButton",
+    "#SpicyLyrics_FullscreenButton",
+  ]) {
+    const button = document.querySelector<HTMLElement>(selector);
+    if (button) {
+      spicyLyricsButtons.add(button);
+    }
   }
 
+  const pageButton = document
+    .querySelector<HTMLElement>("#SpicyLyricsPageSvg")
+    ?.closest<HTMLElement>("button");
+  if (pageButton) {
+    spicyLyricsButtons.add(pageButton);
+  }
+
+  for (const button of spicyLyricsButtons) {
+    if ("spotifyPlusOriginalDisplay" in button.dataset) {
+      toggleElementDisplay(button, false);
+    }
+  }
+}
+
+function applyPlayerButtonCleanup(settings = getSettings()) {
   const candidates = Array.from(document.querySelectorAll<HTMLElement>("button, a"));
 
   for (const element of candidates) {
@@ -90,13 +114,6 @@ function applyPlayerButtonCleanup(settings = getSettings()) {
 }
 
 function resetPlayerButtonCleanup() {
-  const lyricsButtons = Array.from(
-    document.querySelectorAll<HTMLElement>(".main-nowPlayingBar-lyricsButton")
-  );
-  for (const lyricsButton of lyricsButtons) {
-    toggleElementDisplay(lyricsButton, false);
-  }
-
   const candidates = Array.from(document.querySelectorAll<HTMLElement>("button, a"));
 
   for (const element of candidates) {
@@ -114,6 +131,9 @@ function resetPlayerButtonCleanup() {
 
 function refreshPlayerControlsController() {
   const settings = getSettings();
+  syncLyricsButtonClass(settings);
+  restoreLegacySpicyLyricsButtons();
+
   const active = hasActivePlayerCleanup(settings);
 
   if (active) {
