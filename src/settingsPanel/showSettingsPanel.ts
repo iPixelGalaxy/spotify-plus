@@ -19,7 +19,13 @@ export function showSettingsPanel() {
   container.className = "SpotifyPlusSettingsContainer";
 
   const onDocumentClick = (event: MouseEvent) => {
-    if (!container.contains(event.target as Node | null)) {
+    const target = event.target as Element | null;
+    const clickedSpotifyPlusSurface =
+      target?.closest(
+        ".SpotifyPlusSettingsContainer, .SpotifyPlusUpdateDialog, .SpotifyPlusUpdateOverlay"
+      ) !== null;
+
+    if (!clickedSpotifyPlusSurface && !container.contains(event.target as Node | null)) {
       event.preventDefault();
       event.stopPropagation();
       closePanel();

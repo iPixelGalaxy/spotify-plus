@@ -18,10 +18,7 @@ const playerTargets: PlayerButtonTarget[] = [
   {
     key: "hideFriendActivityButton",
     matchers: ["friend activity", "buddy feed"],
-    selectors: [
-      ".main-topBar-buddyFeed",
-      '[data-restore-focus-key="buddy_feed"]',
-    ],
+    selectors: ['[data-restore-focus-key="buddy_feed"]'],
   },
   {
     key: "hideMiniplayerButton",
