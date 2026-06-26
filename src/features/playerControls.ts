@@ -11,12 +11,17 @@ interface PlayerButtonTarget {
     "hideFriendActivityButton" | "hideMiniplayerButton"
   >;
   matchers: string[];
+  selectors?: string[];
 }
 
 const playerTargets: PlayerButtonTarget[] = [
   {
     key: "hideFriendActivityButton",
     matchers: ["friend activity", "buddy feed"],
+    selectors: [
+      ".main-topBar-buddyFeed",
+      '[data-restore-focus-key="buddy_feed"]',
+    ],
   },
   {
     key: "hideMiniplayerButton",
@@ -98,6 +103,14 @@ function restoreLegacySpicyLyricsButtons() {
 }
 
 function applyPlayerButtonCleanup(settings = getSettings()) {
+  for (const target of playerTargets) {
+    for (const selector of target.selectors ?? []) {
+      for (const element of document.querySelectorAll<HTMLElement>(selector)) {
+        toggleElementDisplay(element, settings[target.key]);
+      }
+    }
+  }
+
   const candidates = Array.from(document.querySelectorAll<HTMLElement>("button, a"));
 
   for (const element of candidates) {
@@ -114,6 +127,14 @@ function applyPlayerButtonCleanup(settings = getSettings()) {
 }
 
 function resetPlayerButtonCleanup() {
+  for (const target of playerTargets) {
+    for (const selector of target.selectors ?? []) {
+      for (const element of document.querySelectorAll<HTMLElement>(selector)) {
+        toggleElementDisplay(element, false);
+      }
+    }
+  }
+
   const candidates = Array.from(document.querySelectorAll<HTMLElement>("button, a"));
 
   for (const element of candidates) {
