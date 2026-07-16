@@ -139,10 +139,16 @@ function syncShareMenu() {
   if (pluginButton && nativeButton) {
     pluginButton.className = nativeButton.className;
     const nativeIcon = nativeButton.querySelector<SVGElement>(":scope > svg");
-    if (nativeIcon && !pluginButton.querySelector(":scope > [data-spotify-plus-share-icon]")) {
+    const labelWrapper = pluginButton.querySelector<HTMLElement>(
+      ":scope > div:not(.main-contextMenu-menuItemIconWrapper)"
+    );
+    for (const icon of pluginButton.querySelectorAll(":scope > [data-spotify-plus-share-icon]")) {
+      icon.remove();
+    }
+    if (nativeIcon && labelWrapper && !labelWrapper.querySelector("[data-spotify-plus-share-icon]")) {
       const icon = nativeIcon.cloneNode(true) as SVGElement;
       icon.setAttribute("data-spotify-plus-share-icon", "");
-      pluginButton.insertBefore(icon, pluginButton.firstChild);
+      labelWrapper.insertBefore(icon, labelWrapper.firstChild);
     }
   }
   pluginShare.parentElement.insertBefore(pluginShare, nativeShare);
