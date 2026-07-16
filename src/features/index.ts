@@ -7,11 +7,13 @@ import { startLocalFilesPlaybackFixController } from "./localFilesPlaybackFix";
 import { startPlayerControlsController } from "./playerControls";
 import { startPlaylistMenuController } from "./playlistMenu";
 import { startProfileMenuController } from "./profileMenu";
+import { startShareMenuController } from "./shareMenu";
 import { startUpdatePromptController } from "./updatePrompt";
 import { startWindowTitleController } from "./windowTitle";
 
 export function startFeatureControllers() {
   startCopyMenuController();
+  startShareMenuController();
   startDevicePickerController();
   startExperimentalFeaturesController();
   startLocalFilesController();

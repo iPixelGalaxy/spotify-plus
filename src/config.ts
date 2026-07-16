@@ -40,6 +40,7 @@ export interface SpotifyPlusSettings {
   hideLyricsButton: boolean;
   hideMiniplayerButton: boolean;
   restoreOldDevicePicker: boolean;
+  restoreOldShareMenu: boolean;
   hideYourUpdatesSection: boolean;
   hideHomeConfigMenuItem: boolean;
   hideAccountMenuItem: boolean;
@@ -64,6 +65,7 @@ export const defaultSettings: SpotifyPlusSettings = {
   hideLyricsButton: false,
   hideMiniplayerButton: false,
   restoreOldDevicePicker: false,
+  restoreOldShareMenu: false,
   hideYourUpdatesSection: false,
   hideHomeConfigMenuItem: false,
   hideAccountMenuItem: false,
@@ -170,6 +172,7 @@ export function getSettings(): SpotifyPlusSettings {
     hideLyricsButton: getSetting("hideLyricsButton"),
     hideMiniplayerButton: getSetting("hideMiniplayerButton"),
     restoreOldDevicePicker: getSetting("restoreOldDevicePicker"),
+    restoreOldShareMenu: getSetting("restoreOldShareMenu"),
     hideYourUpdatesSection: getSetting("hideYourUpdatesSection"),
     hideHomeConfigMenuItem: getSetting("hideHomeConfigMenuItem"),
     hideAccountMenuItem: getSetting("hideAccountMenuItem"),

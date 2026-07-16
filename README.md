@@ -66,6 +66,11 @@
   - copies selected track ids as `id1, id2, id3`
 - Reorders the copy entry to sit above Spotify’s `Share` item.
 
+### Restore Old Share Menu
+
+- Optional `Restore Old Share Menu` setting under `Context Menus`.
+- Restores a `Share` submenu with clean link copying, `Embed` where Spotify supports it, and access to Spotify's current Share dialog.
+
 ### Experimental Features Modal Redesign
 
 - Restyles Spotify’s `Experimental features` modal with a cleaner custom layout.
