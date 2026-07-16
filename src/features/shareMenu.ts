@@ -4,6 +4,7 @@ import { isElementVisible, normalizeText, toggleElementDisplay } from "../dom";
 const MARKER_ATTRIBUTE = "data-spotify-plus-share-menu";
 const NATIVE_ATTRIBUTE = "data-spotify-plus-native-share";
 const SHARE_LABEL = "share";
+const PLUGIN_SHARE_LABEL = "share\u2063";
 const EMBED_TYPES = new Set(["track", "album", "artist", "playlist", "show", "episode", "audiobook"]);
 const SHARE_LABELS = ["Song", "Album", "artist", "playlist", "Podcast", "Episode", "Audiobook", "profile", "concert", "venue", "Link"];
 let syncTimeouts: number[] = [];
@@ -122,9 +123,10 @@ function syncShareMenu() {
   const menu = rootMenu();
   if (!menu) return;
   const items = immediateItems(menu);
-  const pluginShare = items.find((item) => item.hasAttribute(MARKER_ATTRIBUTE)) ??
-    items.find((item) => itemLabel(item) === SHARE_LABEL && !item.hasAttribute(NATIVE_ATTRIBUTE));
-  const nativeShare = items.find((item) => itemLabel(item) === SHARE_LABEL && item !== pluginShare);
+  const pluginShare =
+    items.find((item) => item.hasAttribute(MARKER_ATTRIBUTE)) ??
+    items.find((item) => itemLabel(item) === PLUGIN_SHARE_LABEL);
+  const nativeShare = items.find((item) => itemLabel(item) === SHARE_LABEL);
   if (!pluginShare || !nativeShare || !pluginShare.parentElement) return;
 
   pluginShare.setAttribute(MARKER_ATTRIBUTE, "");
@@ -168,7 +170,7 @@ export function startShareMenuController() {
   );
   const dialogItem = new Spicetify.ContextMenu.Item("Open new Share dialog", () => void clickNativeShare(), shouldAddShareMenu);
   const shareMenu = new Spicetify.ContextMenu.SubMenu(
-    "Share",
+    `Share\u2063`,
     [...copyItems, ...embedItems, dialogItem],
     shouldAddShareMenu
   );
