@@ -16,7 +16,7 @@ function getShareTarget(uris: string[]): ShareTarget | null {
 
   try {
     const parsed = Spicetify.URI.fromString(uris[0]);
-    const url = new URL(parsed.toURL("https://open.spotify.com"));
+    const url = new URL(parsed.toURLPath(true), "https://open.spotify.com");
     if (url.origin !== "https://open.spotify.com") return null;
     url.search = "";
     url.hash = "";
