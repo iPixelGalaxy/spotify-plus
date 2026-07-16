@@ -91,28 +91,28 @@ export function showSettingsPanel() {
   scroll.tabIndex = 0;
 
   makeGroup(scroll, "Profile Menu");
-  makeToggle(scroll, 'Hide the "Your Updates" section', "hideYourUpdatesSection");
-  makeToggle(scroll, "Hide Home config", "hideHomeConfigMenuItem");
+  makeToggle(scroll, 'Hide the "Your Updates" Section', "hideYourUpdatesSection");
+  makeToggle(scroll, "Hide Home Config", "hideHomeConfigMenuItem");
   makeToggle(scroll, "Hide Account", "hideAccountMenuItem");
   makeToggle(scroll, "Hide Profile", "hideProfileMenuItem");
   makeToggle(scroll, "Hide Recents", "hideRecentsMenuItem");
   makeToggle(scroll, "Hide Support", "hideSupportMenuItem");
   makeToggle(scroll, "Hide Private Session", "hidePrivateSessionMenuItem");
-  makeToggle(scroll, "Hide Log out", "hideLogOutMenuItem");
+  makeToggle(scroll, "Hide Log Out", "hideLogOutMenuItem");
 
-  makeGroup(scroll, "Clean up Spotify");
-  makeToggle(scroll, "Hide Friend Activity button", "hideFriendActivityButton");
-  makeToggle(scroll, "Hide Lyrics button", "hideLyricsButton");
-  makeToggle(scroll, "Hide Miniplayer button", "hideMiniplayerButton");
-  makeToggle(scroll, "Restore old device picker", "restoreOldDevicePicker");
+  makeGroup(scroll, "Clean Up Spotify");
+  makeToggle(scroll, "Hide Friend Activity Button", "hideFriendActivityButton");
+  makeToggle(scroll, "Hide Lyrics Button", "hideLyricsButton");
+  makeToggle(scroll, "Hide Miniplayer Button", "hideMiniplayerButton");
+  makeToggle(scroll, "Restore Old Device Picker", "restoreOldDevicePicker");
   makeToggle(scroll, "Restore Old Share Menu", "restoreOldShareMenu");
 
   makeGroup(scroll, "Tools");
-  makeToggle(scroll, "Force Spotify window title", "forceWindowTitle");
-  makeTextInput(scroll, "Window title", "windowTitle", "Spotify");
+  makeToggle(scroll, "Force Spotify Window Title", "forceWindowTitle");
+  makeTextInput(scroll, "Window Title", "windowTitle", "Spotify");
   makeToggle(
     scroll,
-    "Toggle me a few times while dev tools are enabled to keep them on",
+    "Toggle Me a Few Times While Dev Tools Are Enabled to Keep Them On",
     "enableDevtoolsOnStartup"
   );
 
@@ -144,8 +144,8 @@ export function showSettingsPanel() {
     })();
   });
 
-  makeRow(scroll, "Scan playlist folders", refreshButton);
-  makeRow(scroll, "Folders to show in Add to playlist", folderChecklist, true);
+  makeRow(scroll, "Scan Playlist Folders", refreshButton);
+  makeRow(scroll, "Folders to Show in Add to Playlist", folderChecklist, true);
 
   makeGroup(scroll, "About");
   makeRow(scroll, getVersionLabel(), makeCheckNowButton());
