@@ -5,6 +5,8 @@ const MARKER_ATTRIBUTE = "data-spotify-plus-share-menu";
 const NATIVE_ATTRIBUTE = "data-spotify-plus-native-share";
 const SHARE_LABEL = "share";
 const PLUGIN_SHARE_LABEL = "share\u2063";
+const SHARE_ICON_PATH =
+  '<path d="M1 5.75A.75.75 0 0 1 1.75 5H4v1.5H2.5v8h11v-8H12V5h2.25a.75.75 0 0 1 .75.75v9.5a.75.75 0 0 1-.75.75H1.75a.75.75 0 0 1-.75-.75z"></path><path d="M8 9.576a.75.75 0 0 0 .75-.75V2.903l1.454 1.454a.75.75 0 0 0 1.06-1.06L8 .03 4.735 3.296a.75.75 0 0 0 1.06 1.061L7.25 2.903v5.923c0 .414.336.75.75.75"></path>';
 const EMBED_TYPES = new Set(["track", "album", "artist", "playlist", "show", "episode", "audiobook"]);
 const SHARE_LABELS = ["Song", "Album", "artist", "playlist", "Podcast", "Episode", "Audiobook", "profile", "concert", "venue", "Link"];
 let syncTimeouts: number[] = [];
@@ -134,7 +136,15 @@ function syncShareMenu() {
   pluginShare.className = nativeShare.className;
   const pluginButton = pluginShare.querySelector<HTMLElement>("button");
   const nativeButton = nativeShare.querySelector<HTMLElement>("button");
-  if (pluginButton && nativeButton) pluginButton.className = nativeButton.className;
+  if (pluginButton && nativeButton) {
+    pluginButton.className = nativeButton.className;
+    const nativeIcon = nativeButton.querySelector<SVGElement>(":scope > svg");
+    if (nativeIcon && !pluginButton.querySelector(":scope > [data-spotify-plus-share-icon]")) {
+      const icon = nativeIcon.cloneNode(true) as SVGElement;
+      icon.setAttribute("data-spotify-plus-share-icon", "");
+      pluginButton.insertBefore(icon, pluginButton.firstChild);
+    }
+  }
   pluginShare.parentElement.insertBefore(pluginShare, nativeShare);
   toggleElementDisplay(nativeShare, true);
 }
@@ -168,7 +178,12 @@ export function startShareMenuController() {
         Spicetify.SVGIcons?.copy ?? "copy"
       )
   );
-  const dialogItem = new Spicetify.ContextMenu.Item("Open new Share dialog", () => void clickNativeShare(), shouldAddShareMenu);
+  const dialogItem = new Spicetify.ContextMenu.Item(
+    "Open new Share dialog",
+    () => void clickNativeShare(),
+    shouldAddShareMenu,
+    SHARE_ICON_PATH
+  );
   const shareMenu = new Spicetify.ContextMenu.SubMenu(
     `Share\u2063`,
     [...copyItems, ...embedItems, dialogItem],
