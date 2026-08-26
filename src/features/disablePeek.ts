@@ -12,8 +12,6 @@ const HIDE_BUTTON_SELECTOR =
 const ENABLED_CLASS = "spotify-plus-disable-peek";
 const BUTTON_WAIT_TIMEOUT = 1200;
 const TRANSITION_TIMEOUT = 2500;
-const INTERACTION_DEBOUNCE = 120;
-const INTERACTION_COOLDOWN = 350;
 const NOW_PLAYING_ICON = `
   <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor">
     <path d="M11.196 8 6 5v6z"></path>
@@ -29,8 +27,6 @@ let syncScheduled = false;
 let desiredOpen: boolean | null = null;
 let transitionRunner: Promise<void> | null = null;
 let transitionEpoch = 0;
-let interactionLockedUntil = 0;
-let transitionStartTimer = 0;
 let pressSequence = 0;
 
 function logInteraction(
@@ -164,7 +160,6 @@ function startTransitionRunner() {
     if (epoch !== transitionEpoch) return;
 
     transitionRunner = null;
-    interactionLockedUntil = performance.now() + INTERACTION_COOLDOWN;
     setProxyState();
     if (desiredOpen !== null) startTransitionRunner();
   });
@@ -172,35 +167,20 @@ function startTransitionRunner() {
 
 function toggleNowPlayingView() {
   const press = ++pressSequence;
-  const cooldownRemaining = Math.max(
-    0,
-    Math.ceil(interactionLockedUntil - performance.now())
-  );
-  const ignoredReason = transitionRunner
-    ? "transition running"
-    : cooldownRemaining > 0
-      ? "cooldown"
-      : null;
+  const queued = Boolean(transitionRunner);
+  desiredOpen = !(desiredOpen ?? isNowPlayingOpen());
 
   logInteraction("button pressed", {
     press,
-    accepted: ignoredReason === null,
-    ignoredReason,
-    cooldownRemaining,
+    accepted: true,
+    queued,
   });
 
-  if (ignoredReason) return;
-
-  if (desiredOpen === null) {
-    desiredOpen = !isNowPlayingOpen();
-  }
   setProxyState();
-  window.clearTimeout(transitionStartTimer);
-  transitionStartTimer = window.setTimeout(() => {
-    transitionStartTimer = 0;
+  if (!queued) {
     logInteraction("transition started", { press });
-    startTransitionRunner();
-  }, INTERACTION_DEBOUNCE);
+  }
+  startTransitionRunner();
 }
 
 function installProxyButton() {
@@ -209,7 +189,7 @@ function installProxyButton() {
   proxyButton = new Spicetify.Playbar.Button(
     "Now playing view",
     NOW_PLAYING_ICON,
-    toggleNowPlayingView,
+    undefined,
     false,
     false,
     false
@@ -218,6 +198,7 @@ function installProxyButton() {
   proxyButton.element.dataset.testid = "control-button-npv";
   proxyButton.element.dataset.restoreFocusKey = "now_playing_view";
   proxyButton.element.setAttribute("aria-pressed", "false");
+  proxyButton.element.addEventListener("click", toggleNowPlayingView);
   proxyButton.register();
 }
 
@@ -268,9 +249,6 @@ function removeProxyButton() {
   transitionEpoch += 1;
   desiredOpen = null;
   transitionRunner = null;
-  interactionLockedUntil = 0;
-  window.clearTimeout(transitionStartTimer);
-  transitionStartTimer = 0;
   proxyButton?.deregister();
   proxyButton = null;
 }
