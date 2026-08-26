@@ -1059,7 +1059,7 @@
   display: none !important;
 }
 
-.spotify-plus-disable-peek .Root__top-container {
+.spotify-plus-disable-peek .Root__now-playing-bar {
   padding-inline-end: 0;
 }
 
