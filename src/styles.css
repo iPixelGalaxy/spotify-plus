@@ -1054,7 +1054,8 @@
   letter-spacing: -0.01em;
 }
 
-.Root__right-sidebar.spotify-plus-hide-collapsed-right-sidebar {
+.spotify-plus-disable-peek .Root__right-sidebar.Root__right-sidebar-peek.Root__right-sidebar-collapsed,
+.spotify-plus-disable-peek .Root__right-sidebar:has(.Root__right-sidebar-peek.Root__right-sidebar-collapsed) {
   display: none !important;
 }
 

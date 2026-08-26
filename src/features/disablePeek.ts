@@ -5,8 +5,7 @@ const EXTRA_CONTROLS_SELECTOR = ".main-nowPlayingBar-extraControls";
 const LYRICS_BUTTON_SELECTOR = 'button[data-testid="lyrics-button"]';
 const PROXY_SELECTOR = 'button[data-spotify-plus-disable-peek="true"]';
 const RIGHT_SIDEBAR_SELECTOR = ".Root__right-sidebar";
-const COLLAPSED_PEEK_SELECTOR = ".Root__right-sidebar-peek.Root__right-sidebar-collapsed";
-const HIDDEN_SIDEBAR_CLASS = "spotify-plus-hide-collapsed-right-sidebar";
+const ENABLED_CLASS = "spotify-plus-disable-peek";
 const NOW_PLAYING_ICON = `
   <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor" stroke="currentColor">
     <path d="M11.196 8 6 5v6z"></path>
@@ -15,6 +14,10 @@ const NOW_PLAYING_ICON = `
 `;
 
 let proxyButton: Spicetify.Playbar.Button | null = null;
+let observedSidebar: HTMLElement | null = null;
+let sidebarObserver: MutationObserver | null = null;
+let bodyObserver: MutationObserver | null = null;
+let syncScheduled = false;
 
 function isEnabled() {
   return getSettings().disablePeek;
@@ -56,6 +59,7 @@ function toggleNowPlayingView() {
   }
 
   nativeButton.click();
+  window.setTimeout(setProxyState, 250);
 }
 
 function installProxyButton() {
@@ -93,23 +97,65 @@ function removeProxyButton() {
   proxyButton = null;
 }
 
-function syncSidebarVisibility(enabled: boolean) {
-  for (const sidebar of document.querySelectorAll<HTMLElement>(RIGHT_SIDEBAR_SELECTOR)) {
-    const collapsed = sidebar.matches(COLLAPSED_PEEK_SELECTOR) || Boolean(
-      sidebar.querySelector(COLLAPSED_PEEK_SELECTOR)
-    );
-    sidebar.classList.toggle(HIDDEN_SIDEBAR_CLASS, enabled && collapsed);
-  }
+function scheduleSync() {
+  if (syncScheduled) return;
+
+  syncScheduled = true;
+  requestAnimationFrame(() => {
+    syncScheduled = false;
+    syncDisablePeekMode();
+  });
+}
+
+function observeSidebar() {
+  const sidebar = document.querySelector<HTMLElement>(RIGHT_SIDEBAR_SELECTOR);
+  if (sidebar === observedSidebar) return;
+
+  sidebarObserver?.disconnect();
+  sidebarObserver = null;
+  observedSidebar = sidebar;
+
+  if (!sidebar) return;
+
+  sidebarObserver = new MutationObserver(scheduleSync);
+  sidebarObserver.observe(sidebar, {
+    attributes: true,
+    attributeFilter: ["class"],
+    childList: true,
+    subtree: true,
+  });
+}
+
+function startBodyObserver() {
+  if (bodyObserver) return;
+
+  bodyObserver = new MutationObserver(scheduleSync);
+  bodyObserver.observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
+}
+
+function stopObservers() {
+  sidebarObserver?.disconnect();
+  sidebarObserver = null;
+  observedSidebar = null;
+  bodyObserver?.disconnect();
+  bodyObserver = null;
 }
 
 function syncDisablePeekMode() {
   const enabled = isEnabled();
-  syncSidebarVisibility(enabled);
+  document.documentElement.classList.toggle(ENABLED_CLASS, enabled);
 
   if (!enabled) {
+    stopObservers();
     removeProxyButton();
     return;
   }
+
+  observeSidebar();
+  startBodyObserver();
 
   if (getNativeNowPlayingButton()) {
     removeProxyButton();
@@ -123,14 +169,6 @@ function syncDisablePeekMode() {
 
 export function startDisablePeekController() {
   syncDisablePeekMode();
-
-  const observer = new MutationObserver(() => syncDisablePeekMode());
-  observer.observe(document.body, {
-    attributes: true,
-    attributeFilter: ["class"],
-    childList: true,
-    subtree: true,
-  });
 
   window.addEventListener(SETTINGS_CHANGED_EVENT, (event) => {
     const key = (event as CustomEvent<{ key?: string }>).detail?.key;
