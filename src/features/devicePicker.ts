@@ -10,6 +10,8 @@ import { SETTINGS_CHANGED_EVENT, getSettings } from "../config";
 
 const CONNECT_BUTTON_SELECTOR =
   'button[aria-label="Connect to a device"], button[data-restore-focus-key="device_picker"]';
+const CONNECT_BAR_TEXT_SELECTOR =
+  ".main-connectBar-connected .main-connectBar-textButton";
 const CONNECT_SIDEBAR_SELECTOR = 'aside[aria-label="Connect to a device"]';
 const CONNECT_TOOLTIP_LABEL = "Connect to a device";
 const CONNECT_PROXY_SELECTOR = 'button[data-spotify-plus-device-picker-proxy="true"]';
@@ -469,6 +471,20 @@ function onDocumentClick(event: MouseEvent) {
     event.preventDefault();
     event.stopPropagation();
     void openDevicePicker(button);
+    return;
+  }
+
+  const connectBarText = target instanceof Element
+    ? target.closest<HTMLElement>(CONNECT_BAR_TEXT_SELECTOR)
+    : null;
+  const managedButton = connectBarText
+    ? document.querySelector<HTMLElement>(CONNECT_PROXY_SELECTOR)
+    : null;
+
+  if (managedButton) {
+    event.preventDefault();
+    event.stopPropagation();
+    void openDevicePicker(managedButton);
     return;
   }
 
