@@ -1059,19 +1059,6 @@
   display: none !important;
 }
 
-button[data-spotify-plus-disable-peek="true"] > .Wrapper-sm-only {
-  width: 16px;
-  height: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-button[data-spotify-plus-disable-peek="true"] svg {
-  display: block;
-  flex: none;
-}
-
 @media (max-width: 760px) {
   .SpotifyPlusExperimentalFeaturesDialog {
     width: calc(100vw - 48px);
