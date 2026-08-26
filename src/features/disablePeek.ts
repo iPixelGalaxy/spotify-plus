@@ -36,10 +36,9 @@ function isNowPlayingOpen() {
   return Boolean(nowPlayingView?.closest(".Root__right-sidebar-expanded"));
 }
 
-function setProxyState() {
+function setProxyOpenState(open: boolean) {
   if (!proxyButton) return;
 
-  const open = isNowPlayingOpen();
   const element = proxyButton.element;
   element.setAttribute("aria-pressed", open ? "true" : "false");
   element.dataset.active = open ? "true" : "false";
@@ -47,8 +46,23 @@ function setProxyState() {
   element.classList.remove("main-genericButton-buttonActiveDot");
 }
 
+function setProxyState() {
+  setProxyOpenState(isNowPlayingOpen());
+}
+
+function setSidebarOpenState(open: boolean) {
+  const sidebarState = document.querySelector<HTMLElement>(
+    ".Root__right-sidebar-peek"
+  );
+  if (!sidebarState) return;
+
+  sidebarState.classList.toggle("Root__right-sidebar-expanded", open);
+  sidebarState.classList.toggle("Root__right-sidebar-collapsed", !open);
+}
+
 function toggleNowPlayingView() {
-  const selector = isNowPlayingOpen()
+  const open = isNowPlayingOpen();
+  const selector = open
     ? '.main-nowPlayingView-headerCloseButton, button[aria-label="Hide Now Playing view"]'
     : '.Root__right-sidebar-overlayButton, button[aria-label="Show Now Playing view"]';
   const nativeButton = document.querySelector<HTMLButtonElement>(selector);
@@ -58,6 +72,8 @@ function toggleNowPlayingView() {
     return;
   }
 
+  setProxyOpenState(!open);
+  setSidebarOpenState(!open);
   nativeButton.click();
   window.setTimeout(setProxyState, 250);
 }
@@ -80,12 +96,42 @@ function installProxyButton() {
   proxyButton.register();
 }
 
+function styleProxyButton(lyricsButton: HTMLButtonElement) {
+  if (!proxyButton) return;
+
+  const element = proxyButton.element;
+  const open = element.dataset.active === "true";
+  element.className = lyricsButton.className;
+  element.classList.remove("main-nowPlayingBar-lyricsButton");
+  element.dataset.encoreId = lyricsButton.dataset.encoreId ?? "buttonTertiary";
+
+  const wrapper = element.firstElementChild;
+  const nativeWrapper = lyricsButton.firstElementChild;
+  if (wrapper instanceof HTMLElement && nativeWrapper instanceof HTMLElement) {
+    wrapper.className = nativeWrapper.className;
+    wrapper.setAttribute("aria-hidden", "true");
+  }
+
+  const icon = element.querySelector("svg");
+  const nativeIcon = lyricsButton.querySelector("svg");
+  if (icon && nativeIcon) {
+    icon.setAttribute("class", nativeIcon.getAttribute("class") ?? "");
+    icon.setAttribute("data-encore-id", nativeIcon.dataset.encoreId ?? "icon");
+    icon.setAttribute("role", "img");
+    icon.setAttribute("aria-hidden", "true");
+  }
+
+  setProxyOpenState(open);
+}
+
 function positionProxyButton() {
   if (!proxyButton) return;
 
   const extraControls = document.querySelector<HTMLElement>(EXTRA_CONTROLS_SELECTOR);
   const lyricsButton = extraControls?.querySelector<HTMLButtonElement>(LYRICS_BUTTON_SELECTOR);
   if (!extraControls || !lyricsButton) return;
+
+  styleProxyButton(lyricsButton);
 
   if (proxyButton.element.parentElement !== extraControls || proxyButton.element.nextElementSibling !== lyricsButton) {
     extraControls.insertBefore(proxyButton.element, lyricsButton);

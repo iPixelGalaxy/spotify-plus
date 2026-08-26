@@ -1063,13 +1063,11 @@
   width: calc(100% + var(--panel-gap));
 }
 
-button:has(#SpicyLyricsPageSvg),
-button[data-spotify-plus-disable-peek="true"] {
+button:has(#SpicyLyricsPageSvg) {
   transform-origin: center;
 }
 
-button:has(#SpicyLyricsPageSvg) > :is(div, span),
-button[data-spotify-plus-disable-peek="true"] > :is(div, span) {
+button:has(#SpicyLyricsPageSvg) > :is(div, span) {
   align-items: center;
   display: flex;
   justify-content: center;
@@ -1081,13 +1079,11 @@ button:has(#SpicyLyricsPageSvg) #SpicyLyricsPageSvg {
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  button:has(#SpicyLyricsPageSvg):hover,
-  button[data-spotify-plus-disable-peek="true"]:hover {
+  button:has(#SpicyLyricsPageSvg):hover {
     transform: scale(var(--encore-button-hover-scale));
   }
 
-  button:has(#SpicyLyricsPageSvg):hover:active,
-  button[data-spotify-plus-disable-peek="true"]:hover:active {
+  button:has(#SpicyLyricsPageSvg):hover:active {
     transform: scale(1);
   }
 }
