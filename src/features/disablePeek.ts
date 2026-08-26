@@ -31,6 +31,20 @@ let transitionRunner: Promise<void> | null = null;
 let transitionEpoch = 0;
 let interactionLockedUntil = 0;
 let transitionStartTimer = 0;
+let pressSequence = 0;
+
+function logInteraction(
+  event: string,
+  details: Record<string, unknown> = {}
+) {
+  console.info(`[Spotify+ Now Playing] ${event}`, {
+    time: Math.round(performance.now()),
+    actualOpen: isNowPlayingOpen(),
+    desiredOpen,
+    transitionRunning: Boolean(transitionRunner),
+    ...details,
+  });
+}
 
 function isEnabled() {
   return getSettings().disablePeek;
@@ -117,6 +131,7 @@ async function runTransitionQueue(epoch: number) {
     if (desiredOpen !== targetOpen) continue;
 
     if (!nativeButton) {
+      logInteraction("native button unavailable", { targetOpen });
       desiredOpen = null;
       setProxyState();
       Spicetify.showNotification("Spotify+: Now Playing view is unavailable", true);
@@ -124,15 +139,18 @@ async function runTransitionQueue(epoch: number) {
     }
 
     nativeButton.click();
+    logInteraction("native button clicked", { targetOpen });
     const reachedTarget = await waitForNowPlayingState(targetOpen, epoch);
     if (epoch !== transitionEpoch || !isEnabled() || !proxyButton) return;
 
     if (!reachedTarget) {
+      logInteraction("transition timed out", { targetOpen });
       if (desiredOpen === targetOpen) desiredOpen = null;
       setProxyState();
       return;
     }
 
+    logInteraction("transition completed", { targetOpen });
     if (desiredOpen === targetOpen) desiredOpen = null;
     setProxyState();
   }
@@ -153,7 +171,25 @@ function startTransitionRunner() {
 }
 
 function toggleNowPlayingView() {
-  if (transitionRunner || performance.now() < interactionLockedUntil) return;
+  const press = ++pressSequence;
+  const cooldownRemaining = Math.max(
+    0,
+    Math.ceil(interactionLockedUntil - performance.now())
+  );
+  const ignoredReason = transitionRunner
+    ? "transition running"
+    : cooldownRemaining > 0
+      ? "cooldown"
+      : null;
+
+  logInteraction("button pressed", {
+    press,
+    accepted: ignoredReason === null,
+    ignoredReason,
+    cooldownRemaining,
+  });
+
+  if (ignoredReason) return;
 
   if (desiredOpen === null) {
     desiredOpen = !isNowPlayingOpen();
@@ -162,6 +198,7 @@ function toggleNowPlayingView() {
   window.clearTimeout(transitionStartTimer);
   transitionStartTimer = window.setTimeout(() => {
     transitionStartTimer = 0;
+    logInteraction("transition started", { press });
     startTransitionRunner();
   }, INTERACTION_DEBOUNCE);
 }
