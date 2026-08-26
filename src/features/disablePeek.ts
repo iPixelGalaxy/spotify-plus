@@ -165,7 +165,11 @@ function startTransitionRunner() {
   });
 }
 
-function toggleNowPlayingView() {
+function toggleNowPlayingView(event: MouseEvent) {
+  if (event.detail > 0 && event.currentTarget instanceof HTMLElement) {
+    event.currentTarget.blur();
+  }
+
   const press = ++pressSequence;
   const queued = Boolean(transitionRunner);
   desiredOpen = !(desiredOpen ?? isNowPlayingOpen());
