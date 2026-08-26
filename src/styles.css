@@ -1059,6 +1059,10 @@
   display: none !important;
 }
 
+.spotify-plus-disable-peek .Root__right-sidebar:has(.Root__right-sidebar-expanded) {
+  margin-inline-end: var(--panel-gap);
+}
+
 button[data-spotify-plus-disable-peek="true"] > .Wrapper-sm-only {
   width: 16px;
   height: 16px;
