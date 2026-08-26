@@ -1,6 +1,7 @@
 import "../styles.css";
 import { startExperimentalFeaturesController } from "./experimentalFeatures";
 import { startCopyMenuController } from "./copyMenu";
+import { startDisablePeekController } from "./disablePeek";
 import { startDevicePickerController } from "./devicePicker";
 import { startLocalFilesController } from "./localFiles";
 import { startLocalFilesPlaybackFixController } from "./localFilesPlaybackFix";
@@ -13,6 +14,7 @@ import { startWindowTitleController } from "./windowTitle";
 
 export function startFeatureControllers() {
   startCopyMenuController();
+  startDisablePeekController();
   startShareMenuController();
   startDevicePickerController();
   startExperimentalFeaturesController();

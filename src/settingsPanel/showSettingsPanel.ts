@@ -104,6 +104,7 @@ export function showSettingsPanel() {
   makeToggle(scroll, "Hide Friend Activity Button", "hideFriendActivityButton");
   makeToggle(scroll, "Hide Lyrics Button", "hideLyricsButton");
   makeToggle(scroll, "Hide Miniplayer Button", "hideMiniplayerButton");
+  makeToggle(scroll, "Disable Peek", "disablePeek");
   makeToggle(scroll, "Restore Old Device Picker", "restoreOldDevicePicker");
   makeToggle(scroll, "Restore Old Share Menu", "restoreOldShareMenu");
 
