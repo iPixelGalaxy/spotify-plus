@@ -1059,10 +1059,6 @@
   display: none !important;
 }
 
-.spotify-plus-disable-peek .Root__now-playing-bar {
-  padding-inline-end: 0;
-}
-
 button[data-spotify-plus-disable-peek="true"] svg {
   transform: translateY(1px);
 }
