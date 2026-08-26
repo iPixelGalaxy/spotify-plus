@@ -7,7 +7,7 @@ const PROXY_SELECTOR = 'button[data-spotify-plus-disable-peek="true"]';
 const RIGHT_SIDEBAR_SELECTOR = ".Root__right-sidebar";
 const ENABLED_CLASS = "spotify-plus-disable-peek";
 const NOW_PLAYING_ICON = `
-  <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor" stroke="currentColor">
+  <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor">
     <path d="M11.196 8 6 5v6z"></path>
     <path d="M15.002 1.75A1.75 1.75 0 0 0 13.252 0h-10.5a1.75 1.75 0 0 0-1.75 1.75v12.5c0 .966.783 1.75 1.75 1.75h10.5a1.75 1.75 0 0 0 1.75-1.75zm-1.75-.25a.25.25 0 0 1 .25.25v12.5a.25.25 0 0 1-.25.25h-10.5a.25.25 0 0 1-.25-.25V1.75a.25.25 0 0 1 .25-.25z"></path>
   </svg>
