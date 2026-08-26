@@ -116,6 +116,7 @@ function styleProxyButton(lyricsButton: HTMLButtonElement) {
   const nativeIcon = lyricsButton.querySelector("svg");
   if (icon && nativeIcon) {
     icon.setAttribute("class", nativeIcon.getAttribute("class") ?? "");
+    icon.setAttribute("style", nativeIcon.getAttribute("style") ?? "");
     icon.setAttribute("data-encore-id", nativeIcon.dataset.encoreId ?? "icon");
     icon.setAttribute("role", "img");
     icon.setAttribute("aria-hidden", "true");
