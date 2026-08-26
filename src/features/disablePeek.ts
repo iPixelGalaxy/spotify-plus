@@ -1,11 +1,19 @@
 import { SETTINGS_CHANGED_EVENT, getSettings } from "../config";
 
-const NATIVE_BUTTON_SELECTOR = 'button[data-testid="control-button-npv"]';
 const EXTRA_CONTROLS_SELECTOR = ".main-nowPlayingBar-extraControls";
 const LYRICS_BUTTON_SELECTOR = 'button[data-testid="lyrics-button"]';
 const PROXY_SELECTOR = 'button[data-spotify-plus-disable-peek="true"]';
 const RIGHT_SIDEBAR_SELECTOR = ".Root__right-sidebar";
+const RIGHT_SIDEBAR_STATE_SELECTOR = ".Root__right-sidebar-peek";
+const SHOW_BUTTON_SELECTOR =
+  '.Root__right-sidebar-overlayButton, button[aria-label="Show Now Playing view"]';
+const HIDE_BUTTON_SELECTOR =
+  '.main-nowPlayingView-headerCloseButton, button[aria-label="Hide Now Playing view"]';
 const ENABLED_CLASS = "spotify-plus-disable-peek";
+const BUTTON_WAIT_TIMEOUT = 1200;
+const TRANSITION_TIMEOUT = 2500;
+const INTERACTION_DEBOUNCE = 120;
+const INTERACTION_COOLDOWN = 350;
 const NOW_PLAYING_ICON = `
   <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor">
     <path d="M11.196 8 6 5v6z"></path>
@@ -18,15 +26,14 @@ let observedSidebar: HTMLElement | null = null;
 let sidebarObserver: MutationObserver | null = null;
 let bodyObserver: MutationObserver | null = null;
 let syncScheduled = false;
+let desiredOpen: boolean | null = null;
+let transitionRunner: Promise<void> | null = null;
+let transitionEpoch = 0;
+let interactionLockedUntil = 0;
+let transitionStartTimer = 0;
 
 function isEnabled() {
   return getSettings().disablePeek;
-}
-
-function getNativeNowPlayingButton() {
-  return Array.from(document.querySelectorAll<HTMLButtonElement>(NATIVE_BUTTON_SELECTOR)).find(
-    (button) => !button.matches(PROXY_SELECTOR)
-  );
 }
 
 function isNowPlayingOpen() {
@@ -47,28 +54,120 @@ function setProxyOpenState(open: boolean) {
 }
 
 function setProxyState() {
-  setProxyOpenState(isNowPlayingOpen());
+  setProxyOpenState(desiredOpen ?? isNowPlayingOpen());
+}
+
+function delay(milliseconds: number) {
+  return new Promise<void>((resolve) => {
+    window.setTimeout(resolve, milliseconds);
+  });
+}
+
+async function waitForNativeButton(targetOpen: boolean, epoch: number) {
+  const selector = targetOpen ? SHOW_BUTTON_SELECTOR : HIDE_BUTTON_SELECTOR;
+  const deadline = performance.now() + BUTTON_WAIT_TIMEOUT;
+
+  while (
+    epoch === transitionEpoch &&
+    isEnabled() &&
+    proxyButton &&
+    desiredOpen === targetOpen &&
+    performance.now() < deadline
+  ) {
+    const button = document.querySelector<HTMLButtonElement>(selector);
+    if (button?.isConnected) return button;
+    await delay(50);
+  }
+
+  return null;
+}
+
+async function waitForNowPlayingState(targetOpen: boolean, epoch: number) {
+  const deadline = performance.now() + TRANSITION_TIMEOUT;
+
+  while (
+    epoch === transitionEpoch &&
+    isEnabled() &&
+    proxyButton &&
+    performance.now() < deadline
+  ) {
+    if (isNowPlayingOpen() === targetOpen) {
+      await delay(100);
+      if (isNowPlayingOpen() === targetOpen) return true;
+    }
+    await delay(25);
+  }
+
+  return false;
+}
+
+async function runTransitionQueue(epoch: number) {
+  while (epoch === transitionEpoch && isEnabled() && proxyButton) {
+    const targetOpen = desiredOpen;
+    if (targetOpen === null) return;
+
+    if (isNowPlayingOpen() === targetOpen) {
+      desiredOpen = null;
+      setProxyState();
+      return;
+    }
+
+    const nativeButton = await waitForNativeButton(targetOpen, epoch);
+    if (epoch !== transitionEpoch || !isEnabled() || !proxyButton) return;
+    if (desiredOpen !== targetOpen) continue;
+
+    if (!nativeButton) {
+      desiredOpen = null;
+      setProxyState();
+      Spicetify.showNotification("Spotify+: Now Playing view is unavailable", true);
+      return;
+    }
+
+    nativeButton.click();
+    const reachedTarget = await waitForNowPlayingState(targetOpen, epoch);
+    if (epoch !== transitionEpoch || !isEnabled() || !proxyButton) return;
+
+    if (!reachedTarget) {
+      if (desiredOpen === targetOpen) desiredOpen = null;
+      setProxyState();
+      return;
+    }
+
+    if (desiredOpen === targetOpen) desiredOpen = null;
+    setProxyState();
+  }
+}
+
+function startTransitionRunner() {
+  if (transitionRunner) return;
+
+  const epoch = transitionEpoch;
+  transitionRunner = runTransitionQueue(epoch).finally(() => {
+    if (epoch !== transitionEpoch) return;
+
+    transitionRunner = null;
+    interactionLockedUntil = performance.now() + INTERACTION_COOLDOWN;
+    setProxyState();
+    if (desiredOpen !== null) startTransitionRunner();
+  });
 }
 
 function toggleNowPlayingView() {
-  const open = isNowPlayingOpen();
-  const selector = open
-    ? '.main-nowPlayingView-headerCloseButton, button[aria-label="Hide Now Playing view"]'
-    : '.Root__right-sidebar-overlayButton, button[aria-label="Show Now Playing view"]';
-  const nativeButton = document.querySelector<HTMLButtonElement>(selector);
+  if (transitionRunner || performance.now() < interactionLockedUntil) return;
 
-  if (!nativeButton) {
-    Spicetify.showNotification("Spotify+: Now Playing view is unavailable", true);
-    return;
+  if (desiredOpen === null) {
+    desiredOpen = !isNowPlayingOpen();
   }
-
-  setProxyOpenState(!open);
-  nativeButton.click();
-  window.setTimeout(setProxyState, 250);
+  setProxyState();
+  window.clearTimeout(transitionStartTimer);
+  transitionStartTimer = window.setTimeout(() => {
+    transitionStartTimer = 0;
+    startTransitionRunner();
+  }, INTERACTION_DEBOUNCE);
 }
 
 function installProxyButton() {
-  if (proxyButton || getNativeNowPlayingButton() || !Spicetify.Playbar?.Button) return;
+  if (proxyButton || !Spicetify.Playbar?.Button) return;
 
   proxyButton = new Spicetify.Playbar.Button(
     "Now playing view",
@@ -129,6 +228,12 @@ function positionProxyButton() {
 }
 
 function removeProxyButton() {
+  transitionEpoch += 1;
+  desiredOpen = null;
+  transitionRunner = null;
+  interactionLockedUntil = 0;
+  window.clearTimeout(transitionStartTimer);
+  transitionStartTimer = 0;
   proxyButton?.deregister();
   proxyButton = null;
 }
@@ -153,7 +258,27 @@ function observeSidebar() {
 
   if (!sidebar) return;
 
-  sidebarObserver = new MutationObserver(scheduleSync);
+  sidebarObserver = new MutationObserver((mutations) => {
+    const relevant = mutations.some((mutation) => {
+      if (mutation.type === "attributes") {
+        return (
+          mutation.target === sidebar ||
+          (mutation.target instanceof Element &&
+            mutation.target.matches(RIGHT_SIDEBAR_STATE_SELECTOR))
+        );
+      }
+
+      if (mutation.target === sidebar) return true;
+      return [...mutation.addedNodes, ...mutation.removedNodes].some(
+        (node) =>
+          node instanceof Element &&
+          (node.matches(RIGHT_SIDEBAR_STATE_SELECTOR) ||
+            Boolean(node.querySelector(RIGHT_SIDEBAR_STATE_SELECTOR)))
+      );
+    });
+
+    if (relevant) scheduleSync();
+  });
   sidebarObserver.observe(sidebar, {
     attributes: true,
     attributeFilter: ["class"],
@@ -165,7 +290,39 @@ function observeSidebar() {
 function startBodyObserver() {
   if (bodyObserver) return;
 
-  bodyObserver = new MutationObserver(scheduleSync);
+  bodyObserver = new MutationObserver((mutations) => {
+    if (observedSidebar && !observedSidebar.isConnected) {
+      scheduleSync();
+      return;
+    }
+
+    if (proxyButton && !proxyButton.element.isConnected) {
+      scheduleSync();
+      return;
+    }
+
+    const relevant = mutations.some((mutation) => {
+      if (
+        mutation.target instanceof Element &&
+        mutation.target.matches(EXTRA_CONTROLS_SELECTOR)
+      ) {
+        return true;
+      }
+
+      return [...mutation.addedNodes, ...mutation.removedNodes].some(
+        (node) =>
+          node instanceof Element &&
+          (node.matches(`${RIGHT_SIDEBAR_SELECTOR}, ${EXTRA_CONTROLS_SELECTOR}`) ||
+            Boolean(
+              node.querySelector(
+                `${RIGHT_SIDEBAR_SELECTOR}, ${EXTRA_CONTROLS_SELECTOR}`
+              )
+            ))
+      );
+    });
+
+    if (relevant) scheduleSync();
+  });
   bodyObserver.observe(document.body, {
     childList: true,
     subtree: true,
@@ -192,11 +349,6 @@ function syncDisablePeekMode() {
 
   observeSidebar();
   startBodyObserver();
-
-  if (getNativeNowPlayingButton()) {
-    removeProxyButton();
-    return;
-  }
 
   installProxyButton();
   positionProxyButton();
