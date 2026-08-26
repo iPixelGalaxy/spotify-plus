@@ -50,16 +50,6 @@ function setProxyState() {
   setProxyOpenState(isNowPlayingOpen());
 }
 
-function setSidebarOpenState(open: boolean) {
-  const sidebarState = document.querySelector<HTMLElement>(
-    ".Root__right-sidebar-peek"
-  );
-  if (!sidebarState) return;
-
-  sidebarState.classList.toggle("Root__right-sidebar-expanded", open);
-  sidebarState.classList.toggle("Root__right-sidebar-collapsed", !open);
-}
-
 function toggleNowPlayingView() {
   const open = isNowPlayingOpen();
   const selector = open
@@ -73,7 +63,6 @@ function toggleNowPlayingView() {
   }
 
   setProxyOpenState(!open);
-  setSidebarOpenState(!open);
   nativeButton.click();
   window.setTimeout(setProxyState, 250);
 }
