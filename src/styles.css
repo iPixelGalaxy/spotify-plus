@@ -1059,8 +1059,34 @@
   display: none !important;
 }
 
-button[data-spotify-plus-disable-peek="true"] svg {
-  transform: translateY(1px);
+.spotify-plus-disable-peek .Root__main-view:has(~ .Root__right-sidebar.Root__right-sidebar-peek.Root__right-sidebar-collapsed),
+.spotify-plus-disable-peek .Root__main-view:has(~ .Root__right-sidebar:has(.Root__right-sidebar-peek.Root__right-sidebar-collapsed)) {
+  margin-inline-end: calc(var(--panel-gap) * -1);
+}
+
+button:has(#SpicyLyricsPageSvg),
+button[data-spotify-plus-disable-peek="true"] {
+  transform-origin: center;
+}
+
+button:has(#SpicyLyricsPageSvg) > :is(div, span),
+button[data-spotify-plus-disable-peek="true"] > :is(div, span) {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  line-height: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  button:has(#SpicyLyricsPageSvg):hover,
+  button[data-spotify-plus-disable-peek="true"]:hover {
+    transform: scale(var(--encore-button-hover-scale));
+  }
+
+  button:has(#SpicyLyricsPageSvg):hover:active,
+  button[data-spotify-plus-disable-peek="true"]:hover:active {
+    transform: scale(1);
+  }
 }
 
 @media (max-width: 760px) {
