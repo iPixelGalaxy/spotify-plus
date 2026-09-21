@@ -172,35 +172,18 @@ function getPlaylistImageSource(uri: string | null) {
   return playlistLink?.querySelector<HTMLImageElement>("img")?.src ?? null;
 }
 
-function findImageUri(value: unknown): string | null {
-  if (typeof value === "string") {
-    return /^(https?:|spotify:image:)/.test(value) ? value : null;
-  }
-  if (!value || typeof value !== "object") return null;
-
-  if (Array.isArray(value)) {
-    for (const item of value) {
-      const image = findImageUri(item);
-      if (image) return image;
-    }
-    return null;
-  }
-
-  const record = value as Record<string, unknown>;
-  for (const key of ["imageUrl", "image_url", "image", "images", "picture", "url", "src", "uri"]) {
-    const image = findImageUri(record[key]);
-    if (image) return image;
-  }
-  return null;
-}
-
-function getPlaylistImageFromMetadata(uri: string) {
+function getPlaylistImageFromGraphQL(uri: string) {
   const cached = playlistImageCache.get(uri);
   if (cached) return cached;
 
-  const pending = Spicetify.Platform?.PlaylistAPI?.getMetadata?.(uri)
-    .then((metadata) => findImageUri(metadata))
-    .catch(() => null) ?? Promise.resolve(null);
+  const graphQl = Spicetify.GraphQL;
+  const definition = graphQl?.Definitions?.fetchExtractedColorAndImageForPlaylistEntity;
+  const pending = definition && typeof graphQl?.Request === "function"
+    ? graphQl
+        .Request(definition, { uri })
+        .then((response) => response?.data?.playlistV2?.images?.items?.[0]?.sources?.[0]?.url ?? null)
+        .catch(() => null)
+    : Promise.resolve(null);
   playlistImageCache.set(uri, pending);
   return pending;
 }
@@ -232,7 +215,7 @@ export function addPlaylistImage(row: HTMLElement, uri: string | null) {
     return;
   }
 
-  void getPlaylistImageFromMetadata(uri).then((image) => {
+  void getPlaylistImageFromGraphQL(uri).then((image) => {
     if (image && getSetting("showPlaylistMenuCoverArt")) {
       insertPlaylistImage(row, image);
     }
