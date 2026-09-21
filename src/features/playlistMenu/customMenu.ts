@@ -155,6 +155,33 @@ function clearCustomContainer(state: CustomMenuState) {
   state.customContainer.replaceChildren();
 }
 
+function getPlaylistImageSource(uri: string | null) {
+  if (!uri) return null;
+
+  const playlistId = uri.match(/^spotify:playlist:([A-Za-z0-9]+)$/)?.[1];
+  if (!playlistId) return null;
+
+  const playlistLink = Array.from(document.querySelectorAll<HTMLAnchorElement>("a[href]"))
+    .find((link) => link.getAttribute("href")?.includes(`/playlist/${playlistId}`));
+  return playlistLink?.querySelector<HTMLImageElement>("img")?.src ?? null;
+}
+
+function addPlaylistImage(row: HTMLElement, uri: string | null) {
+  const source = getPlaylistImageSource(uri);
+  if (!source) return;
+
+  const button = getMenuItemButton(row);
+  const content = button?.querySelector<HTMLElement>(":scope > div");
+  if (!content || content.querySelector(".spotify-plus-playlist-menu-image")) return;
+
+  const image = document.createElement("img");
+  image.className = "spotify-plus-playlist-menu-image";
+  image.src = source;
+  image.alt = "";
+  image.setAttribute("aria-hidden", "true");
+  content.insertBefore(image, content.firstChild);
+}
+
 function createRenderedRow(node: ActionMenuNode) {
   const row = node.template
     ? (node.template.cloneNode(true) as HTMLElement)
@@ -166,6 +193,10 @@ function createRenderedRow(node: ActionMenuNode) {
   );
   if (label) {
     label.textContent = node.displayLabel;
+  }
+
+  if (node.target === "folder") {
+    addPlaylistImage(row, node.playlistUri);
   }
 
   return row;
