@@ -138,17 +138,17 @@ function syncShareMenu() {
   const nativeButton = nativeShare.querySelector<HTMLElement>("button");
   if (pluginButton && nativeButton) {
     pluginButton.className = nativeButton.className;
-    const nativeIcon = nativeButton.querySelector<SVGElement>(":scope > svg");
     const labelWrapper = pluginButton.querySelector<HTMLElement>(
       ":scope > div:not(.main-contextMenu-menuItemIconWrapper)"
     );
-    for (const icon of pluginButton.querySelectorAll(":scope > [data-spotify-plus-share-icon]")) {
-      icon.remove();
-    }
-    if (nativeIcon && labelWrapper && !labelWrapper.querySelector("[data-spotify-plus-share-icon]")) {
-      const icon = nativeIcon.cloneNode(true) as SVGElement;
-      icon.setAttribute("data-spotify-plus-share-icon", "");
-      labelWrapper.insertBefore(icon, labelWrapper.firstChild);
+    const nativeIconWrapper = nativeButton.querySelector<HTMLElement>(
+      ":scope > div > div:has([data-encore-id='icon'])"
+    );
+    if (labelWrapper && nativeIconWrapper) {
+      labelWrapper.querySelector(":scope > div:has([data-encore-id='icon'])")?.remove();
+      const iconWrapper = nativeIconWrapper.cloneNode(true) as HTMLElement;
+      iconWrapper.dataset.spotifyPlusShareIcon = "true";
+      labelWrapper.insertBefore(iconWrapper, labelWrapper.firstChild);
     }
   }
   pluginShare.parentElement.insertBefore(pluginShare, nativeShare);
