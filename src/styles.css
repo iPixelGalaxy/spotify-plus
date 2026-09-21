@@ -54,6 +54,11 @@
   position: relative !important;
 }
 
+/* Spotify 1.3 puts rows directly in the menu, so no child source container exists. */
+[role="menu"].spotify-plus-custom-playlist-root > :not(.spotify-plus-custom-playlist-container) {
+  display: none !important;
+}
+
 .spotify-plus-profile-menu-label {
   display: inline-flex;
   align-items: center;
