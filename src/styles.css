@@ -1071,6 +1071,10 @@
   width: calc(100% + var(--panel-gap));
 }
 
+.spotify-plus-disable-peek .Root__top-container:has(.Root__right-sidebar-peekContent[aria-hidden="true"]) .Root__main-view {
+  width: calc(100% + var(--panel-gap));
+}
+
 button:has(#SpicyLyricsPageSvg) {
   transform-origin: center;
 }
