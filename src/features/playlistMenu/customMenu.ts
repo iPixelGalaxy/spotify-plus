@@ -209,15 +209,12 @@ function insertPlaylistImage(row: HTMLElement, source: string) {
 export function addPlaylistImage(row: HTMLElement, uri: string | null) {
   if (!getSetting("showPlaylistMenuCoverArt") || !uri) return;
 
-  const renderedImage = getPlaylistImageSource(uri);
-  if (renderedImage) {
-    insertPlaylistImage(row, renderedImage);
-    return;
-  }
-
   void getPlaylistImageFromGraphQL(uri).then((image) => {
-    if (image && getSetting("showPlaylistMenuCoverArt")) {
-      insertPlaylistImage(row, image);
+    if (!getSetting("showPlaylistMenuCoverArt")) return;
+
+    const source = image ?? getPlaylistImageSource(uri);
+    if (source) {
+      insertPlaylistImage(row, source);
     }
   });
 }
