@@ -51,6 +51,7 @@ export interface SpotifyPlusSettings {
   hidePrivateSessionMenuItem: boolean;
   hideLogOutMenuItem: boolean;
   overridePlaylistFolderBehavior: boolean;
+  showPlaylistMenuCoverArt: boolean;
   playlistOverrideFolderIds: string[];
   playlistBaseFolderId: string;
 }
@@ -77,6 +78,7 @@ export const defaultSettings: SpotifyPlusSettings = {
   hidePrivateSessionMenuItem: false,
   hideLogOutMenuItem: false,
   overridePlaylistFolderBehavior: false,
+  showPlaylistMenuCoverArt: true,
   playlistOverrideFolderIds: [],
   playlistBaseFolderId: "",
 };
@@ -185,6 +187,7 @@ export function getSettings(): SpotifyPlusSettings {
     hidePrivateSessionMenuItem: getSetting("hidePrivateSessionMenuItem"),
     hideLogOutMenuItem: getSetting("hideLogOutMenuItem"),
     overridePlaylistFolderBehavior: getSetting("overridePlaylistFolderBehavior"),
+    showPlaylistMenuCoverArt: getSetting("showPlaylistMenuCoverArt"),
     playlistOverrideFolderIds: getSetting("playlistOverrideFolderIds"),
     playlistBaseFolderId: getSetting("playlistBaseFolderId"),
   };

@@ -1,4 +1,4 @@
-import type { PlaylistFolderEntry } from "../../config";
+import { getSetting, type PlaylistFolderEntry } from "../../config";
 import {
   ACTION_TRIGGER_DEBOUNCE_MS,
   CUSTOM_CONTAINER_CLASS,
@@ -161,12 +161,19 @@ function getPlaylistImageSource(uri: string | null) {
   const playlistId = uri.match(/^spotify:playlist:([A-Za-z0-9]+)$/)?.[1];
   if (!playlistId) return null;
 
+  const playlistRowImage = document.querySelector<HTMLImageElement>(
+    `[aria-labelledby*="spotify:playlist:${playlistId}"] img`
+  );
+  if (playlistRowImage?.src) return playlistRowImage.src;
+
   const playlistLink = Array.from(document.querySelectorAll<HTMLAnchorElement>("a[href]"))
     .find((link) => link.getAttribute("href")?.includes(`/playlist/${playlistId}`));
   return playlistLink?.querySelector<HTMLImageElement>("img")?.src ?? null;
 }
 
 function addPlaylistImage(row: HTMLElement, uri: string | null) {
+  if (!getSetting("showPlaylistMenuCoverArt")) return;
+
   const source = getPlaylistImageSource(uri);
   if (!source) return;
 

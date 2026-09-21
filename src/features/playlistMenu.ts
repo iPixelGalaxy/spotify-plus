@@ -122,9 +122,14 @@ function onSettingsChanged(event: Event) {
   const key = (event as CustomEvent<{ key?: string }>).detail?.key;
   if (
     key !== "overridePlaylistFolderBehavior" &&
-    key !== "playlistOverrideFolderIds"
+    key !== "playlistOverrideFolderIds" &&
+    key !== "showPlaylistMenuCoverArt"
   ) {
     return;
+  }
+
+  if (key === "showPlaylistMenuCoverArt") {
+    resetPlaylistMenuCleanup();
   }
 
   refreshPlaylistMenuController();

@@ -123,6 +123,7 @@ export function showSettingsPanel() {
     "Override Folder Behavior",
     "overridePlaylistFolderBehavior"
   );
+  makeToggle(scroll, "Show Playlist Cover Art", "showPlaylistMenuCoverArt");
 
   const folderChecklist = document.createElement("div");
   folderChecklist.className = "sl-folderChecklist";
