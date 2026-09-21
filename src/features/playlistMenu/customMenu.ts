@@ -187,7 +187,7 @@ function findImageUri(value: unknown): string | null {
   }
 
   const record = value as Record<string, unknown>;
-  for (const key of ["imageUrl", "image_url", "image", "images", "picture"]) {
+  for (const key of ["imageUrl", "image_url", "image", "images", "picture", "url", "src", "uri"]) {
     const image = findImageUri(record[key]);
     if (image) return image;
   }
@@ -223,7 +223,7 @@ function insertPlaylistImage(row: HTMLElement, source: string) {
   button.insertBefore(imageSlot, label);
 }
 
-function addPlaylistImage(row: HTMLElement, uri: string | null) {
+export function addPlaylistImage(row: HTMLElement, uri: string | null) {
   if (!getSetting("showPlaylistMenuCoverArt") || !uri) return;
 
   const renderedImage = getPlaylistImageSource(uri);

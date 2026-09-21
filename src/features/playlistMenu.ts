@@ -6,12 +6,24 @@ import {
 } from "../config";
 import { isElementVisible } from "../dom";
 import {
+  addPlaylistImage,
   cleanupDetachedStates,
   customMenuStates,
   ensureCustomMenuState,
   releaseCustomMenuState,
 } from "./playlistMenu/customMenu";
-import { CUSTOM_ROOT_CLASS, getItemLabel, getMenuDepth, normalizePlaylistMatchText } from "./playlistMenu/helpers";
+import {
+  CUSTOM_ROOT_CLASS,
+  getItemLabel,
+  getMenuChildren,
+  getMenuContentContainer,
+  getMenuDepth,
+  getMenuItemButton,
+  isDivider,
+  isSearchRow,
+  normalizePlaylistMatchText,
+} from "./playlistMenu/helpers";
+import { getPlaylistUriFromRow } from "./playlistMenu/nativeMenu";
 
 let observer: MutationObserver | null = null;
 let hasAppliedCleanup = false;
@@ -58,11 +70,30 @@ function isTrackedRootMenu(menu: HTMLElement) {
   );
 }
 
+function syncNativePlaylistCoverArt(rootMenus: HTMLElement[]) {
+  if (!getSettings().showPlaylistMenuCoverArt) return;
+
+  for (const menu of rootMenus) {
+    if (menu.classList.contains(CUSTOM_ROOT_CLASS)) continue;
+
+    for (const row of getMenuChildren(getMenuContentContainer(menu))) {
+      const button = getMenuItemButton(row);
+      if (!button || isSearchRow(row) || isDivider(row)) continue;
+      if (normalizePlaylistMatchText(getItemLabel(row)) === "new playlist") continue;
+      if (button.getAttribute("aria-haspopup") === "menu") continue;
+
+      addPlaylistImage(row, getPlaylistUriFromRow(row));
+    }
+  }
+}
+
 function applyPlaylistMenuCleanup() {
   const folders = getSelectedFolders();
   const rootMenus = Array.from(
     document.querySelectorAll<HTMLElement>(".main-contextMenu-menu, [role='menu']")
   ).filter((menu) => isTrackedRootMenu(menu));
+
+  syncNativePlaylistCoverArt(rootMenus);
 
   if (folders.length === 0 || rootMenus.length === 0) {
     if (hasAppliedCleanup || customMenuStates.size > 0) {
@@ -91,9 +122,10 @@ function resetPlaylistMenuCleanup() {
 function refreshPlaylistMenuController() {
   const settings = getSettings();
   const active =
-    settings.overridePlaylistFolderBehavior &&
-    Array.isArray(settings.playlistOverrideFolderIds) &&
-    settings.playlistOverrideFolderIds.length > 0;
+    settings.showPlaylistMenuCoverArt ||
+    (settings.overridePlaylistFolderBehavior &&
+      Array.isArray(settings.playlistOverrideFolderIds) &&
+      settings.playlistOverrideFolderIds.length > 0);
 
   if (active) {
     applyPlaylistMenuCleanup();
@@ -130,6 +162,11 @@ function onSettingsChanged(event: Event) {
 
   if (key === "showPlaylistMenuCoverArt") {
     resetPlaylistMenuCleanup();
+    if (!getSettings().showPlaylistMenuCoverArt) {
+      document
+        .querySelectorAll<HTMLElement>(".spotify-plus-playlist-menu-image-slot")
+        .forEach((slot) => slot.remove());
+    }
   }
 
   refreshPlaylistMenuController();
