@@ -36,6 +36,7 @@ import {
 } from "./nativeMenu";
 
 export const customMenuStates = new Map<HTMLElement, CustomMenuState>();
+const playlistImageCache = new Map<string, Promise<string | null>>();
 
 function getSelectedFolderIdsKey(folders: PlaylistFolderEntry[]) {
   return folders.map((folder) => folder.id).join("|");
@@ -171,11 +172,41 @@ function getPlaylistImageSource(uri: string | null) {
   return playlistLink?.querySelector<HTMLImageElement>("img")?.src ?? null;
 }
 
-function addPlaylistImage(row: HTMLElement, uri: string | null) {
-  if (!getSetting("showPlaylistMenuCoverArt")) return;
+function findImageUri(value: unknown): string | null {
+  if (typeof value === "string") {
+    return /^(https?:|spotify:image:)/.test(value) ? value : null;
+  }
+  if (!value || typeof value !== "object") return null;
 
-  const source = getPlaylistImageSource(uri);
-  if (!source) return;
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const image = findImageUri(item);
+      if (image) return image;
+    }
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+  for (const key of ["imageUrl", "image_url", "image", "images", "picture"]) {
+    const image = findImageUri(record[key]);
+    if (image) return image;
+  }
+  return null;
+}
+
+function getPlaylistImageFromMetadata(uri: string) {
+  const cached = playlistImageCache.get(uri);
+  if (cached) return cached;
+
+  const pending = Spicetify.Platform?.PlaylistAPI?.getMetadata?.(uri)
+    .then((metadata) => findImageUri(metadata))
+    .catch(() => null) ?? Promise.resolve(null);
+  playlistImageCache.set(uri, pending);
+  return pending;
+}
+
+function insertPlaylistImage(row: HTMLElement, source: string) {
+  if (!row.isConnected || row.querySelector(".spotify-plus-playlist-menu-image")) return;
 
   const button = getMenuItemButton(row);
   const label = button?.querySelector<HTMLElement>(":scope > div");
@@ -190,6 +221,22 @@ function addPlaylistImage(row: HTMLElement, uri: string | null) {
   image.setAttribute("aria-hidden", "true");
   imageSlot.appendChild(image);
   button.insertBefore(imageSlot, label);
+}
+
+function addPlaylistImage(row: HTMLElement, uri: string | null) {
+  if (!getSetting("showPlaylistMenuCoverArt") || !uri) return;
+
+  const renderedImage = getPlaylistImageSource(uri);
+  if (renderedImage) {
+    insertPlaylistImage(row, renderedImage);
+    return;
+  }
+
+  void getPlaylistImageFromMetadata(uri).then((image) => {
+    if (image && getSetting("showPlaylistMenuCoverArt")) {
+      insertPlaylistImage(row, image);
+    }
+  });
 }
 
 function createRenderedRow(node: ActionMenuNode) {

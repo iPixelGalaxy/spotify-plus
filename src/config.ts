@@ -78,7 +78,7 @@ export const defaultSettings: SpotifyPlusSettings = {
   hidePrivateSessionMenuItem: false,
   hideLogOutMenuItem: false,
   overridePlaylistFolderBehavior: false,
-  showPlaylistMenuCoverArt: true,
+  showPlaylistMenuCoverArt: false,
   playlistOverrideFolderIds: [],
   playlistBaseFolderId: "",
 };
