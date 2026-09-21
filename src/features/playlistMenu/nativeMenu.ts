@@ -7,6 +7,8 @@ import {
   getItemLabel,
   getMenuChildren,
   getMenuContentContainer,
+  getMenuItemButton,
+  getMenuItems,
   isBlockedPlaylistName,
   isConnectedElement,
   isDivider,
@@ -265,7 +267,7 @@ export function getNestedPopup(parentItem: HTMLElement | null | undefined) {
   }
 
   const popupMenu = Array.from(
-    parentItem.querySelectorAll<HTMLElement>(".main-contextMenu-menu")
+    parentItem.querySelectorAll<HTMLElement>(".main-contextMenu-menu, [role='menu']")
   ).find((menu) => Number(menu.getAttribute("data-depth") ?? "0") >= 2);
   const popupRoot = popupMenu?.closest<HTMLElement>("[data-tippy-root]");
 
@@ -360,7 +362,7 @@ export function findMenuItemByLabel(scope: ParentNode | null | undefined, label:
     return null;
   }
 
-  const items = Array.from(scope.querySelectorAll<HTMLElement>(".main-contextMenu-menuItem"));
+  const items = getMenuItems(scope);
   const normalizedLabel = normalizePlaylistMatchText(label);
 
   for (const item of items) {
@@ -368,7 +370,7 @@ export function findMenuItemByLabel(scope: ParentNode | null | undefined, label:
       continue;
     }
 
-    const button = item.querySelector<HTMLElement>(".main-contextMenu-menuItemButton");
+    const button = getMenuItemButton(item);
     if (button) {
       return { item, button };
     }
@@ -382,7 +384,7 @@ function findMenuItemByUri(scope: ParentNode | null | undefined, playlistUri: st
     return null;
   }
 
-  const items = Array.from(scope.querySelectorAll<HTMLElement>(".main-contextMenu-menuItem"));
+  const items = getMenuItems(scope);
 
   for (const item of items) {
     if (isSearchRow(item)) {
@@ -393,7 +395,7 @@ function findMenuItemByUri(scope: ParentNode | null | undefined, playlistUri: st
       continue;
     }
 
-    const button = item.querySelector<HTMLElement>(".main-contextMenu-menuItemButton");
+    const button = getMenuItemButton(item);
     if (button) {
       return { item, button };
     }
@@ -407,7 +409,7 @@ export function collectMenuDebugDetails(scope: ParentNode | null | undefined) {
     return { availableLabels: [], availableUris: [] };
   }
 
-  const items = Array.from(scope.querySelectorAll<HTMLElement>(".main-contextMenu-menuItem"));
+  const items = getMenuItems(scope);
   const availableLabels: string[] = [];
   const availableUris: string[] = [];
 
@@ -463,18 +465,19 @@ export async function extractDirectAddablePlaylistEntries(popupMenu: HTMLElement
   const popupContainer = getMenuContentContainer(popupMenu);
 
   for (const row of getMenuChildren(popupContainer)) {
-    if (isSearchRow(row) || isDivider(row) || !row.classList.contains("main-contextMenu-menuItem")) {
+    if (isSearchRow(row) || isDivider(row) || getMenuItemButton(row) === null) {
       continue;
     }
 
-    const button = row.querySelector<HTMLElement>(".main-contextMenu-menuItemButton");
+    const button = getMenuItemButton(row);
     if (!button) {
       continue;
     }
 
     const hasSubmenu =
       button.getAttribute("aria-expanded") === "true" ||
-      button.querySelector(".main-contextMenu-subMenuIcon") !== null;
+      button.querySelector(".main-contextMenu-subMenuIcon") !== null ||
+      button.getAttribute("aria-haspopup") === "menu";
     if (hasSubmenu) {
       continue;
     }

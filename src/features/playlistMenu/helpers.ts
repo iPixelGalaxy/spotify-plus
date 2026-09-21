@@ -121,6 +121,20 @@ export function getMenuContentContainer(menu: HTMLElement) {
   return menu.querySelector<HTMLElement>(":scope > div") ?? menu;
 }
 
+export function getMenuItemButton(item: HTMLElement) {
+  return (
+    item.querySelector<HTMLElement>(":scope > .main-contextMenu-menuItemButton") ??
+    item.querySelector<HTMLElement>(":scope > [role='menuitem']") ??
+    item.querySelector<HTMLElement>(".main-contextMenu-menuItemButton, [role='menuitem']")
+  );
+}
+
+export function getMenuItems(scope: ParentNode) {
+  return Array.from(
+    scope.querySelectorAll<HTMLElement>(".main-contextMenu-menuItem, [role='presentation']")
+  ).filter((item) => getMenuItemButton(item) !== null);
+}
+
 export function getMenuChildren(target: HTMLElement) {
   return Array.from(target.children).filter(
     (child): child is HTMLElement => child instanceof HTMLElement
@@ -128,10 +142,7 @@ export function getMenuChildren(target: HTMLElement) {
 }
 
 export function getItemLabel(item: HTMLElement) {
-  const button =
-    item.querySelector<HTMLElement>(":scope > .main-contextMenu-menuItemButton") ??
-    item.querySelector<HTMLElement>(".main-contextMenu-menuItemButton") ??
-    item;
+  const button = getMenuItemButton(item) ?? item;
   const labelElement = button.querySelector<HTMLElement>(
     ".main-contextMenu-menuItemLabel, [data-encore-id='text'], [data-encore-id='type'], .TypeElement-type-mesto"
   );
@@ -141,7 +152,7 @@ export function getItemLabel(item: HTMLElement) {
 export function isSearchRow(item: HTMLElement) {
   return (
     item.classList.contains("NYplcvf1o79tewx0Wc83") ||
-    item.querySelector(".x-filterBox-filterInputContainer, .x-filterBox-filterInput") !==
+    item.querySelector(".x-filterBox-filterInputContainer, .x-filterBox-filterInput, input") !==
       null
   );
 }
@@ -149,7 +160,8 @@ export function isSearchRow(item: HTMLElement) {
 export function isDivider(item: HTMLElement) {
   return (
     item.classList.contains("main-contextMenu-dividerAfter") ||
-    item.classList.contains("main-contextMenu-dividerBefore")
+    item.classList.contains("main-contextMenu-dividerBefore") ||
+    (item.tagName === "DIV" && getMenuItemButton(item) === null)
   );
 }
 
@@ -206,7 +218,7 @@ export function scrubClonedNode(node: HTMLElement | null | undefined) {
   }
 
   const nestedMenus = [
-    ...node.querySelectorAll<HTMLElement>(".main-contextMenu-menu"),
+    ...node.querySelectorAll<HTMLElement>(".main-contextMenu-menu, [role='menu']"),
     ...node.querySelectorAll<HTMLElement>("[data-tippy-root]"),
   ];
 
@@ -225,7 +237,7 @@ export function scrubClonedNode(node: HTMLElement | null | undefined) {
     element.removeAttribute("id");
   }
 
-  const button = node.querySelector<HTMLElement>(".main-contextMenu-menuItemButton");
+  const button = getMenuItemButton(node);
   if (button) {
     button.tabIndex = -1;
     button.removeAttribute("aria-expanded");

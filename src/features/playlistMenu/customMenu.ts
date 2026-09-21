@@ -10,6 +10,7 @@ import {
   createFallbackMenuRow,
   getFirstDividerTemplate,
   getFolderSource,
+  getMenuItemButton,
   getMenuContentContainer,
   isBlockedPlaylistName,
   isConnectedElement,
@@ -157,7 +158,7 @@ function createRenderedRow(node: ActionMenuNode) {
   scrubClonedNode(row);
 
   if (!node.template) {
-    const label = row.querySelector<HTMLElement>(".main-contextMenu-menuItemLabel");
+    const label = row.querySelector<HTMLElement>(".main-contextMenu-menuItemLabel, [data-encore-id='text']");
     if (label) {
       label.textContent = node.displayLabel;
     }
@@ -325,7 +326,7 @@ function renderCustomMenu(state: CustomMenuState) {
     }
 
     const row = createRenderedRow(node);
-    const button = row.querySelector<HTMLElement>(".main-contextMenu-menuItemButton");
+    const button = getMenuItemButton(row);
     if (button) {
       const triggerAction = (event: Event) => {
         event.preventDefault();
@@ -352,7 +353,7 @@ function renderCustomMenu(state: CustomMenuState) {
 
   if (state.customContainer.childElementCount === 0) {
     const emptyRow = createFallbackMenuRow("No playlists found");
-    const emptyButton = emptyRow.querySelector<HTMLElement>(".main-contextMenu-menuItemButton");
+    const emptyButton = getMenuItemButton(emptyRow);
     if (emptyButton) {
       emptyButton.setAttribute("aria-disabled", "true");
     }

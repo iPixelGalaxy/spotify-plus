@@ -24,11 +24,13 @@
   color: var(--text-subdued, #656565);
 }
 
-.main-contextMenu-menu.spotify-plus-custom-playlist-root {
+.main-contextMenu-menu.spotify-plus-custom-playlist-root,
+[role="menu"].spotify-plus-custom-playlist-root {
   position: relative !important;
 }
 
-.main-contextMenu-menu.spotify-plus-custom-playlist-root > .spotify-plus-custom-playlist-source {
+.main-contextMenu-menu.spotify-plus-custom-playlist-root > .spotify-plus-custom-playlist-source,
+[role="menu"].spotify-plus-custom-playlist-root > .spotify-plus-custom-playlist-source {
   position: absolute !important;
   inset: 0 !important;
   width: 0 !important;
@@ -42,11 +44,13 @@
   pointer-events: none !important;
 }
 
-.main-contextMenu-menu.spotify-plus-custom-playlist-root > .spotify-plus-custom-playlist-source * {
+.main-contextMenu-menu.spotify-plus-custom-playlist-root > .spotify-plus-custom-playlist-source *,
+[role="menu"].spotify-plus-custom-playlist-root > .spotify-plus-custom-playlist-source * {
   pointer-events: none !important;
 }
 
-.main-contextMenu-menu.spotify-plus-custom-playlist-root > .spotify-plus-custom-playlist-container {
+.main-contextMenu-menu.spotify-plus-custom-playlist-root > .spotify-plus-custom-playlist-container,
+[role="menu"].spotify-plus-custom-playlist-root > .spotify-plus-custom-playlist-container {
   position: relative !important;
 }
 

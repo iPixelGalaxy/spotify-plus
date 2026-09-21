@@ -39,15 +39,11 @@ function getSelectedFolders() {
 }
 
 function isAddToPlaylistRootMenu(menu: HTMLElement) {
-  if (
-    getMenuDepth(menu) !== 1 ||
-    menu.querySelector(".x-filterBox-filterInputContainer, .x-filterBox-filterInput") ===
-      null
-  ) {
+  if (getMenuDepth(menu) < 1) {
     return false;
   }
 
-  const hostItem = menu.closest<HTMLElement>(".main-contextMenu-menuItem");
+  const hostItem = menu.closest<HTMLElement>(".main-contextMenu-menuItem, [role='presentation']");
   if (!hostItem) return false;
 
   return normalizePlaylistMatchText(getItemLabel(hostItem)) === "add to playlist";
@@ -65,7 +61,7 @@ function isTrackedRootMenu(menu: HTMLElement) {
 function applyPlaylistMenuCleanup() {
   const folders = getSelectedFolders();
   const rootMenus = Array.from(
-    document.querySelectorAll<HTMLElement>(".main-contextMenu-menu")
+    document.querySelectorAll<HTMLElement>(".main-contextMenu-menu, [role='menu']")
   ).filter((menu) => isTrackedRootMenu(menu));
 
   if (folders.length === 0 || rootMenus.length === 0) {
