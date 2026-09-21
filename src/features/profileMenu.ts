@@ -311,7 +311,10 @@ function isYourUpdatesContainer(element: HTMLElement) {
 function isDivider(element: HTMLElement) {
   return (
     element.classList.contains("main-contextMenu-dividerAfter") ||
-    element.classList.contains("main-contextMenu-dividerBefore")
+    element.classList.contains("main-contextMenu-dividerBefore") ||
+    (element.tagName === "DIV" &&
+      element.getAttribute("role") === null &&
+      element.querySelector("[role='menuitem'], [role='menuitemcheckbox'], [data-encore-id='text']") === null)
   );
 }
 
