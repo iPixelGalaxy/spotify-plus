@@ -7,6 +7,8 @@ const SHARE_LABEL = "share";
 const PLUGIN_SHARE_LABEL = "share\u2063";
 const SHARE_ICON_PATH =
   '<path d="M1 5.75A.75.75 0 0 1 1.75 5H4v1.5H2.5v8h11v-8H12V5h2.25a.75.75 0 0 1 .75.75v9.5a.75.75 0 0 1-.75.75H1.75a.75.75 0 0 1-.75-.75z"></path><path d="M8 9.576a.75.75 0 0 0 .75-.75V2.903l1.454 1.454a.75.75 0 0 0 1.06-1.06L8 .03 4.735 3.296a.75.75 0 0 0 1.06 1.061L7.25 2.903v5.923c0 .414.336.75.75.75"></path>';
+const EMBED_ICON_PATH =
+  '<path d="M5.53 2.47a.75.75 0 0 1 0 1.06L2.06 8l3.47 3.47a.75.75 0 1 1-1.06 1.06L.47 8l4-4a.75.75 0 0 1 1.06 0m4.94 0a.75.75 0 0 1 1.06 0l4 4-4 4a.75.75 0 1 1-1.06-1.06L13.94 8l-3.47-3.47a.75.75 0 0 1 0-1.06"></path>';
 const EMBED_TYPES = new Set(["track", "album", "artist", "playlist", "show", "episode", "audiobook"]);
 const SHARE_LABELS = ["Song", "Album", "artist", "playlist", "Podcast", "Episode", "Audiobook", "profile", "concert", "venue", "Link"];
 let syncTimeouts: number[] = [];
@@ -181,7 +183,7 @@ export function startShareMenuController() {
           const target = getShareTarget(uris);
           return matchesShareLabel(uris, label) && EMBED_TYPES.has(target?.type ?? "");
         },
-        Spicetify.SVGIcons?.copy ?? "copy"
+        EMBED_ICON_PATH
       )
   );
   const dialogItem = new Spicetify.ContextMenu.Item(
