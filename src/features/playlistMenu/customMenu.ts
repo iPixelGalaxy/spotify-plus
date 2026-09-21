@@ -83,6 +83,7 @@ function buildMenuNodes(state: CustomMenuState) {
   const newPlaylistMatch = findMenuItemByLabel(state.sourceContainer, "new playlist");
   const newPlaylistRow = newPlaylistMatch?.item ?? null;
   const dividerTemplate = getFirstDividerTemplate(state.sourceContainer);
+  const fallbackTemplate = newPlaylistRow?.cloneNode(true) as HTMLElement | undefined;
   const playlists = state.nativeFoldersLoaded
     ? state.folderSources.flatMap((source) =>
         (
@@ -94,7 +95,7 @@ function buildMenuNodes(state: CustomMenuState) {
           playlistUri: playlist.playlistUri,
           rootFolderLabel: source.sourceKey,
           path: [] as string[],
-          template: playlist.template,
+          template: playlist.template ?? fallbackTemplate ?? null,
           liveButton: playlist.liveButton,
         }))
       )
@@ -105,7 +106,7 @@ function buildMenuNodes(state: CustomMenuState) {
           playlistUri: playlist.playlistUri,
           rootFolderLabel: source.sourceKey,
           path: [] as string[],
-          template: playlist.template,
+          template: playlist.template ?? fallbackTemplate ?? null,
           liveButton: playlist.liveButton,
         }))
       );
@@ -157,11 +158,11 @@ function createRenderedRow(node: ActionMenuNode) {
     : createFallbackMenuRow(node.displayLabel);
   scrubClonedNode(row);
 
-  if (!node.template) {
-    const label = row.querySelector<HTMLElement>(".main-contextMenu-menuItemLabel, [data-encore-id='text']");
-    if (label) {
-      label.textContent = node.displayLabel;
-    }
+  const label = row.querySelector<HTMLElement>(
+    ".main-contextMenu-menuItemLabel, [data-encore-id='text'], [data-encore-id='type']"
+  );
+  if (label) {
+    label.textContent = node.displayLabel;
   }
 
   return row;
