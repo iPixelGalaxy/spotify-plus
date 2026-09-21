@@ -85,7 +85,7 @@ function buildMenuNodes(state: CustomMenuState) {
   const dividerTemplate = getFirstDividerTemplate(state.sourceContainer);
   const fallbackTemplate = newPlaylistRow?.cloneNode(true) as HTMLElement | undefined;
   fallbackTemplate
-    ?.querySelector(":scope > [role='menuitem'] > div > div:has([data-encore-id='icon'])")
+    ?.querySelector(":scope > [role='menuitem'] > div:has([data-encore-id='icon'])")
     ?.remove();
   const playlists = state.nativeFoldersLoaded
     ? state.folderSources.flatMap((source) =>
@@ -171,15 +171,18 @@ function addPlaylistImage(row: HTMLElement, uri: string | null) {
   if (!source) return;
 
   const button = getMenuItemButton(row);
-  const content = button?.querySelector<HTMLElement>(":scope > div");
-  if (!content || content.querySelector(".spotify-plus-playlist-menu-image")) return;
+  const label = button?.querySelector<HTMLElement>(":scope > div");
+  if (!button || !label || button.querySelector(".spotify-plus-playlist-menu-image")) return;
 
+  const imageSlot = document.createElement("div");
+  imageSlot.className = "djsDgqLgMea1jkvv2gAS spotify-plus-playlist-menu-image-slot";
   const image = document.createElement("img");
   image.className = "spotify-plus-playlist-menu-image";
   image.src = source;
   image.alt = "";
   image.setAttribute("aria-hidden", "true");
-  content.insertBefore(image, content.firstChild);
+  imageSlot.appendChild(image);
+  button.insertBefore(imageSlot, label);
 }
 
 function createRenderedRow(node: ActionMenuNode) {
