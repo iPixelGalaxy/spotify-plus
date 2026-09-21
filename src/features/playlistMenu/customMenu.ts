@@ -84,6 +84,9 @@ function buildMenuNodes(state: CustomMenuState) {
   const newPlaylistRow = newPlaylistMatch?.item ?? null;
   const dividerTemplate = getFirstDividerTemplate(state.sourceContainer);
   const fallbackTemplate = newPlaylistRow?.cloneNode(true) as HTMLElement | undefined;
+  fallbackTemplate
+    ?.querySelector(":scope > [role='menuitem'] > div > div:has([data-encore-id='icon'])")
+    ?.remove();
   const playlists = state.nativeFoldersLoaded
     ? state.folderSources.flatMap((source) =>
         (
