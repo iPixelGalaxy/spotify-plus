@@ -3,12 +3,12 @@ import { SETTINGS_CHANGED_EVENT, getSettings } from "../config";
 const EXTRA_CONTROLS_SELECTOR = ".main-nowPlayingBar-extraControls";
 const LYRICS_BUTTON_SELECTOR = 'button[data-testid="lyrics-button"]';
 const PROXY_SELECTOR = 'button[data-spotify-plus-disable-peek="true"]';
-const RIGHT_SIDEBAR_SELECTOR = ".Root__right-sidebar";
-const RIGHT_SIDEBAR_STATE_SELECTOR = ".Root__right-sidebar-peek";
+const RIGHT_SIDEBAR_SELECTOR = ".Root__right-sidebar, .Root__right-sidebar-overlayWrapper";
+const RIGHT_SIDEBAR_STATE_SELECTOR = ".Root__right-sidebar-peek, .Root__right-sidebar-peekContent";
 const SHOW_BUTTON_SELECTOR =
   '.Root__right-sidebar-overlayButton, button[aria-label="Show Now Playing view"]';
 const HIDE_BUTTON_SELECTOR =
-  '.main-nowPlayingView-headerCloseButton, button[aria-label="Hide Now Playing view"]';
+  '.main-nowPlayingView-headerCloseButton, button[aria-label="Hide Now Playing view"], [data-testid="PanelHeader_CloseButton"] button[aria-label="Close"]';
 const ENABLED_CLASS = "spotify-plus-disable-peek";
 const BUTTON_WAIT_TIMEOUT = 1200;
 const TRANSITION_TIMEOUT = 2500;
@@ -50,6 +50,10 @@ function isNowPlayingOpen() {
   const nowPlayingView = document.querySelector<HTMLElement>(
     'aside[aria-label="Now playing view"], .NowPlayingView'
   );
+  const peekContent = nowPlayingView?.closest<HTMLElement>(
+    ".Root__right-sidebar-peekContent"
+  );
+  if (peekContent) return peekContent.getAttribute("aria-hidden") === "false";
   return Boolean(nowPlayingView?.closest(".Root__right-sidebar-expanded"));
 }
 

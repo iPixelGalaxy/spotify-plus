@@ -135,7 +135,7 @@ function getItemLabel(item: HTMLElement) {
 }
 
 function injectCopyMenuIcon(item: HTMLElement) {
-  const button = item.querySelector<HTMLElement>(":scope > .main-contextMenu-menuItemButton");
+  const button = item.querySelector<HTMLElement>(":scope > [role='menuitem']");
   if (!button) {
     return;
   }
@@ -163,15 +163,15 @@ function injectCopyMenuIcon(item: HTMLElement) {
 }
 
 function getImmediateMenuItems(menu: HTMLElement) {
-  return Array.from(menu.querySelectorAll<HTMLElement>(".main-contextMenu-menuItem")).filter(
-    (item) => item.closest(".main-contextMenu-menu") === menu
+  return Array.from(menu.children).filter(
+    (item): item is HTMLElement => item instanceof HTMLElement && item.getAttribute("role") === "presentation" && item.querySelector(":scope > [role='menuitem']") !== null
   );
 }
 
 function getVisibleRootContextMenu() {
-  return document.querySelector<HTMLElement>(
-    '#context-menu .main-contextMenu-menu[data-depth="0"], #context-menu .main-contextMenu-menu:not([data-depth])'
-  );
+  return Array.from(
+    document.querySelectorAll<HTMLElement>("[role='menu'][data-depth='0']")
+  ).find((menu) => menu.getClientRects().length > 0) ?? null;
 }
 
 function syncCopyMenuPlacement() {

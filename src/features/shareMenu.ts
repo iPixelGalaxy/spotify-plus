@@ -58,14 +58,14 @@ async function copyLink(uris: string[]) {
 }
 
 function rootMenu() {
-  return document.querySelector<HTMLElement>(
-    '#context-menu .main-contextMenu-menu[data-depth="0"], #context-menu .main-contextMenu-menu:not([data-depth])'
-  );
+  return Array.from(
+    document.querySelectorAll<HTMLElement>("[role='menu'][data-depth='0']")
+  ).find(isElementVisible) ?? null;
 }
 
 function immediateItems(menu: HTMLElement) {
-  return Array.from(menu.querySelectorAll<HTMLElement>(".main-contextMenu-menuItem")).filter(
-    (item) => item.closest(".main-contextMenu-menu") === menu
+  return Array.from(menu.children).filter(
+    (item): item is HTMLElement => item instanceof HTMLElement && item.getAttribute("role") === "presentation" && item.querySelector(":scope > [role='menuitem']") !== null
   );
 }
 

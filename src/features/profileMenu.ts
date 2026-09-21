@@ -38,7 +38,6 @@ const profileMenuIdentityLabels = [
   "home config",
   "private session",
   "log out",
-  "settings",
 ];
 
 function getMenuLabels(menu: HTMLElement) {
@@ -48,11 +47,6 @@ function getMenuLabels(menu: HTMLElement) {
 }
 
 function isProfileMenu(menu: HTMLElement) {
-  const host = menu.closest<HTMLElement>("#context-menu");
-  if (host?.getAttribute("data-placement") !== "bottom-end") {
-    return false;
-  }
-
   const labels = getMenuLabels(menu);
   const hasKnownProfileItems = labels.some((label) =>
     profileMenuIdentityLabels.includes(label)
@@ -155,15 +149,55 @@ function createUpdateMenuItem() {
   return item;
 }
 
+function createModernMenuItem(
+  template: HTMLElement,
+  label: string,
+  marker: "spotifyPlusInjected" | "spotifyPlusUpdateInjected",
+  action: () => void
+) {
+  const item = template.cloneNode(true) as HTMLElement;
+  item.dataset[marker] = "true";
+  item.removeAttribute("style");
+
+  const interactive = item.querySelector<HTMLElement>(":scope > [role='menuitem']");
+  if (!interactive) return item;
+  interactive.removeAttribute("href");
+  interactive.replaceChildren();
+
+  const content = document.createElement("div");
+  content.className = "obXoS6exmFOrsQ0USNwL";
+  const text = document.createElement("span");
+  text.className = "e-10860-text encore-text-body-small ellipsis-one-line kgpJNATRQslYCzIZa4UG";
+  text.dataset.encoreId = "text";
+  text.dir = "auto";
+  text.textContent = label;
+  content.appendChild(text);
+  interactive.appendChild(content);
+  interactive.addEventListener("click", (event) => {
+    event.preventDefault();
+    const menuRoot = interactive.closest<HTMLElement>("[data-tippy-root]");
+    if (menuRoot) {
+      menuRoot.style.display = "none";
+      window.setTimeout(() => menuRoot.remove(), 0);
+    }
+    window.setTimeout(action, 0);
+  });
+  return item;
+}
+
 function injectSpotifyPlusMenuItem(menu: HTMLElement) {
   const existing = menu.querySelector<HTMLElement>('[data-spotify-plus-injected="true"]');
   if (existing) return;
 
-  const settingsItem = Array.from(menu.querySelectorAll<HTMLElement>(".main-contextMenu-menuItem")).find(
+  const settingsItem = Array.from(menu.children).filter(
+    (child): child is HTMLElement => child instanceof HTMLElement
+  ).find(
     (item) => getItemLabel(item) === "settings"
   );
 
-  const spotifyPlusItem = createSpotifyPlusMenuItem();
+  const spotifyPlusItem = settingsItem
+    ? createModernMenuItem(settingsItem, "Spotify+", "spotifyPlusInjected", showSettingsPanel)
+    : createSpotifyPlusMenuItem();
   if (settingsItem?.parentElement) {
     settingsItem.parentElement.insertBefore(spotifyPlusItem, settingsItem);
     return;
@@ -184,7 +218,12 @@ function injectUpdateMenuItem(menu: HTMLElement) {
   }
 
   const spotifyPlusItem = menu.querySelector<HTMLElement>('[data-spotify-plus-injected="true"]');
-  const updateItem = createUpdateMenuItem();
+  const template = Array.from(menu.children).find(
+    (child): child is HTMLElement => child instanceof HTMLElement && getItemLabel(child) === "settings"
+  );
+  const updateItem = template
+    ? createModernMenuItem(template, "Update Spotify+", "spotifyPlusUpdateInjected", openUpdatePrompt)
+    : createUpdateMenuItem();
   if (!updateItem) {
     return;
   }
@@ -253,7 +292,7 @@ function syncSpotifyPlusUpdateIndicators() {
 
 function getItemLabel(item: HTMLElement) {
   const labelElement = item.querySelector<HTMLElement>(
-    ".main-contextMenu-menuItemLabel, [data-encore-id='text']"
+    ".main-contextMenu-menuItemLabel, [data-encore-id='text'], [data-encore-id='type']"
   );
   return normalizeText(labelElement?.textContent);
 }
@@ -311,16 +350,16 @@ function trimVisibleDividers(menu: HTMLElement) {
 function applyProfileMenuCleanup() {
   const settings = getSettings();
   const menus = Array.from(
-    document.querySelectorAll<HTMLElement>(
-      '#context-menu[data-placement="bottom-end"] .main-contextMenu-menu'
-    )
+    document.querySelectorAll<HTMLElement>("[role='menu'][data-depth='0']")
   ).filter((menu) => isElementVisible(menu) && isProfileMenu(menu));
 
   for (const menu of menus) {
     injectSpotifyPlusMenuItem(menu);
     injectUpdateMenuItem(menu);
 
-    const items = Array.from(menu.querySelectorAll<HTMLElement>(".main-contextMenu-menuItem"));
+    const items = Array.from(menu.children).filter(
+      (child): child is HTMLElement => child instanceof HTMLElement && child.getAttribute("role") === "presentation"
+    );
 
     for (const item of items) {
       const label = getItemLabel(item);
