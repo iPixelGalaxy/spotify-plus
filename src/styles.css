@@ -254,25 +254,30 @@
   background: rgba(255, 255, 255, 0.08);
 }
 
-.SpotifyPlusManagedDeviceTooltipRoot .main-contextMenu-tippy {
-  width: max-content !important;
-  max-width: none !important;
-  padding: 4px 10px !important;
-  border-radius: 4px !important;
-  background: var(--background-elevated-base, #282828) !important;
-  box-shadow: none !important;
+/* Spicetify's tooltip renderer still uses this legacy class after Spotify moved
+   its native tooltip styles to a hashed class. Keep extension tooltips native. */
+[data-tippy-root] .main-contextMenu-tippy {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  max-width: 50ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: var(--spice-card, #282828);
+  color: var(--spice-text, #fff);
+  box-shadow: 0 16px 24px rgba(0, 0, 0, 0.3), 0 6px 8px rgba(0, 0, 0, 0.2);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-align: start;
 }
 
 .SpotifyPlusManagedDeviceTooltipRoot [role="tooltip"] {
-  display: block !important;
-  width: max-content !important;
-  max-width: none !important;
-  white-space: nowrap !important;
-  color: var(--text-base, #fff) !important;
-  font-size: 0.8125rem !important;
-  line-height: 1rem !important;
-  font-weight: 500 !important;
-  letter-spacing: 0 !important;
+  display: block;
+  white-space: nowrap;
 }
 
 .SpotifyPlusLocalArtistLink {
