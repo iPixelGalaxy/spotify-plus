@@ -8,6 +8,16 @@ import {
   openUpdatePrompt,
 } from "./updatePrompt";
 
+const PROFILE_MENU_SELECTOR = "[role='menu'][data-depth='0']";
+const PROFILE_AVATAR_SELECTOR = [
+  "button.main-userWidget-box",
+  'button[aria-label*="account" i]',
+  'button[aria-label*="profile" i]',
+  'button[aria-label*="user" i]',
+  '[data-testid*="user-widget" i]',
+  '[data-testid*="account" i]',
+].join(",");
+
 const menuItemSettings: Array<{
   label: string;
   key: keyof Pick<
@@ -237,18 +247,10 @@ function injectUpdateMenuItem(menu: HTMLElement) {
 }
 
 function getProfileAvatarCandidates() {
-  const selectors = [
-    "button.main-userWidget-box",
-    'button[aria-label*="account" i]',
-    'button[aria-label*="profile" i]',
-    'button[aria-label*="user" i]',
-    '[data-testid*="user-widget" i]',
-    '[data-testid*="account" i]',
-  ];
-
-  return Array.from(document.querySelectorAll<HTMLElement>(selectors.join(","))).filter(
+  // Hidden avatars can be decorated too. Measuring visibility here forces layout
+  // for unrelated animated content, including lyrics, before the browser paints.
+  return Array.from(document.querySelectorAll<HTMLElement>(PROFILE_AVATAR_SELECTOR)).filter(
     (element) =>
-      isElementVisible(element) &&
       !element.closest("#context-menu") &&
       (element.querySelector("img, svg") !== null || element.getAttribute("aria-label") !== null)
   );
@@ -353,8 +355,8 @@ function trimVisibleDividers(menu: HTMLElement) {
 function applyProfileMenuCleanup() {
   const settings = getSettings();
   const menus = Array.from(
-    document.querySelectorAll<HTMLElement>("[role='menu'][data-depth='0']")
-  ).filter((menu) => isElementVisible(menu) && isProfileMenu(menu));
+    document.querySelectorAll<HTMLElement>(PROFILE_MENU_SELECTOR)
+  ).filter((menu) => isProfileMenu(menu) && isElementVisible(menu));
 
   for (const menu of menus) {
     injectSpotifyPlusMenuItem(menu);
@@ -401,9 +403,39 @@ export function startProfileMenuController() {
   applyProfileMenuCleanup();
   syncSpotifyPlusUpdateIndicators();
 
-  const observer = new MutationObserver(() => {
-    applyProfileMenuCleanup();
-    syncSpotifyPlusUpdateIndicators();
+  let menusDirty = false;
+  let avatarsDirty = false;
+  let pendingFrame: number | null = null;
+
+  const affectsSelector = (mutation: MutationRecord, selector: string) => {
+    if (mutation.target instanceof Element && mutation.target.closest(selector)) {
+      return true;
+    }
+    // Inspect only changed subtrees. Volume tooltips and lyric updates should
+    // never trigger a document-wide avatar scan or profile menu layout read.
+    return [...mutation.addedNodes, ...mutation.removedNodes].some(
+      (node) => node instanceof Element &&
+        (node.matches(selector) || node.querySelector(selector) !== null)
+    );
+  };
+
+  const observer = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      menusDirty ||= affectsSelector(mutation, PROFILE_MENU_SELECTOR);
+      avatarsDirty ||= affectsSelector(mutation, PROFILE_AVATAR_SELECTOR);
+      if (menusDirty && avatarsDirty) break;
+    }
+    if ((!menusDirty && !avatarsDirty) || pendingFrame !== null) return;
+
+    pendingFrame = window.requestAnimationFrame(() => {
+      pendingFrame = null;
+      const updateMenus = menusDirty;
+      const updateAvatars = avatarsDirty;
+      menusDirty = false;
+      avatarsDirty = false;
+      if (updateMenus) applyProfileMenuCleanup();
+      if (updateAvatars) syncSpotifyPlusUpdateIndicators();
+    });
   });
 
   observer.observe(document.body, {
