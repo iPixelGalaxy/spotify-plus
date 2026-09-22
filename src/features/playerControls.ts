@@ -23,6 +23,11 @@ const playerTargets: PlayerButtonTarget[] = [
   {
     key: "hideMiniplayerButton",
     matchers: ["miniplayer", "mini player"],
+    selectors: [
+      '[data-restore-focus-key="miniplayer"]',
+      '[data-testid*="miniplayer" i]',
+      '[data-testid*="mini-player" i]',
+    ],
   },
 ];
 
@@ -42,7 +47,13 @@ let cleanupFrame: number | null = null;
 const cleanupTargets = new Set<HTMLElement>();
 const pendingControls = new Set<HTMLElement>();
 const addedRoots = new Set<Element>();
-const candidateSelector = ["button", "a", ...playerTargets.flatMap((target) => target.selectors ?? [])].join(", ");
+const candidateSelector = [
+  "button",
+  "a",
+  '[role="button"]',
+  ...playerTargets.flatMap((target) => target.selectors ?? []),
+].join(", ");
+const startupRescanDelays = [250, 1_000, 3_000];
 
 const HIDE_LYRICS_CLASS = "spotify-plus-hide-lyrics-button";
 
@@ -98,7 +109,8 @@ function matchingTargets(element: HTMLElement) {
   const blob = elementTextBlob(element);
   return playerTargets.filter((target) =>
     target.selectors?.some((selector) => element.matches(selector)) ||
-    (element.matches("button, a") && target.matchers.some((matcher) => blob.includes(matcher)))
+    (element.matches("button, a, [role='button']") &&
+      target.matchers.some((matcher) => blob.includes(matcher)))
   );
 }
 
@@ -185,6 +197,15 @@ function refreshPlayerControlsController() {
     attributes: true,
     attributeFilter: ["aria-label", "title", "data-testid", "data-tooltip", "data-restore-focus-key"],
   });
+
+  for (const delay of startupRescanDelays) {
+    window.setTimeout(() => {
+      if (!observer) return;
+      for (const control of document.querySelectorAll<HTMLElement>(candidateSelector)) {
+        applyControl(control, getSettings());
+      }
+    }, delay);
+  }
 }
 
 function onSettingsChanged(event: Event) {
