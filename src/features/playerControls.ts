@@ -38,7 +38,11 @@ const playerCleanupKeys: Array<
 ];
 
 let observer: MutationObserver | null = null;
-let hasAppliedCleanup = false;
+let cleanupFrame: number | null = null;
+const cleanupTargets = new Set<HTMLElement>();
+const pendingControls = new Set<HTMLElement>();
+const addedRoots = new Set<Element>();
+const candidateSelector = ["button", "a", ...playerTargets.flatMap((target) => target.selectors ?? [])].join(", ");
 
 const HIDE_LYRICS_CLASS = "spotify-plus-hide-lyrics-button";
 
@@ -54,15 +58,6 @@ function elementTextBlob(element: Element) {
       .filter(Boolean)
       .join(" ")
   )} `;
-}
-
-function hasActivePlayerCleanup(
-  settings: Pick<
-    SpotifyPlusSettings,
-    "hideFriendActivityButton" | "hideMiniplayerButton"
-  >
-) {
-  return settings.hideFriendActivityButton || settings.hideMiniplayerButton;
 }
 
 function syncLyricsButtonClass(settings = getSettings()) {
@@ -99,52 +94,73 @@ function restoreLegacySpicyLyricsButtons() {
   }
 }
 
-function applyPlayerButtonCleanup(settings = getSettings()) {
-  for (const target of playerTargets) {
-    for (const selector of target.selectors ?? []) {
-      for (const element of document.querySelectorAll<HTMLElement>(selector)) {
-        toggleElementDisplay(element, settings[target.key]);
-      }
-    }
-  }
-
-  const candidates = Array.from(document.querySelectorAll<HTMLElement>("button, a"));
-
-  for (const element of candidates) {
-    const blob = elementTextBlob(element);
-    if (!blob) continue;
-
-    for (const target of playerTargets) {
-      if (!target.matchers.some((matcher) => blob.includes(matcher))) continue;
-      toggleElementDisplay(element, settings[target.key]);
-    }
-  }
-
-  hasAppliedCleanup = true;
+function matchingTargets(element: HTMLElement) {
+  const blob = elementTextBlob(element);
+  return playerTargets.filter((target) =>
+    target.selectors?.some((selector) => element.matches(selector)) ||
+    (element.matches("button, a") && target.matchers.some((matcher) => blob.includes(matcher)))
+  );
 }
 
-function resetPlayerButtonCleanup() {
-  for (const target of playerTargets) {
-    for (const selector of target.selectors ?? []) {
-      for (const element of document.querySelectorAll<HTMLElement>(selector)) {
-        toggleElementDisplay(element, false);
+function applyControl(element: HTMLElement, settings: SpotifyPlusSettings) {
+  const targets = matchingTargets(element);
+  if (targets.length) {
+    cleanupTargets.add(element);
+    toggleElementDisplay(element, targets.some((target) => settings[target.key]));
+  } else if (cleanupTargets.delete(element)) {
+    toggleElementDisplay(element, false);
+  }
+}
+
+function queueControl(element: Element | null) {
+  const control = element?.closest<HTMLElement>(candidateSelector);
+  // Volume labels change frequently, but only cleanup targets need a frame.
+  if (control && (cleanupTargets.has(control) || matchingTargets(control).length)) {
+    pendingControls.add(control);
+  }
+}
+
+function flushPlayerButtonCleanup() {
+  cleanupFrame = null;
+  const settings = getSettings();
+  for (const root of addedRoots) {
+    if (!root.isConnected) continue;
+    // A parent addition already covers any separately reported descendants.
+    let parent = root.parentElement;
+    while (parent && !addedRoots.has(parent)) parent = parent.parentElement;
+    if (parent) continue;
+    queueControl(root);
+    for (const control of root.querySelectorAll<HTMLElement>(candidateSelector)) {
+      queueControl(control);
+    }
+  }
+  addedRoots.clear();
+  for (const control of pendingControls) {
+    if (control.isConnected) applyControl(control, settings);
+  }
+  pendingControls.clear();
+  for (const control of cleanupTargets) {
+    if (!control.isConnected) {
+      toggleElementDisplay(control, false);
+      cleanupTargets.delete(control);
+    }
+  }
+}
+
+function onPlayerControlMutations(mutations: MutationRecord[]) {
+  for (const mutation of mutations) {
+    const element = mutation.target instanceof Element ? mutation.target : mutation.target.parentElement;
+    queueControl(element);
+    for (const node of mutation.addedNodes) {
+      if (node instanceof Element && (node.matches(candidateSelector) || node.querySelector(candidateSelector))) {
+        addedRoots.add(node);
       }
     }
   }
-
-  const candidates = Array.from(document.querySelectorAll<HTMLElement>("button, a"));
-
-  for (const element of candidates) {
-    const blob = elementTextBlob(element);
-    if (!blob) continue;
-
-    for (const target of playerTargets) {
-      if (!target.matchers.some((matcher) => blob.includes(matcher))) continue;
-      toggleElementDisplay(element, false);
-    }
+  const hasDetachedTargets = [...cleanupTargets].some((control) => !control.isConnected);
+  if (cleanupFrame === null && (pendingControls.size || addedRoots.size || hasDetachedTargets)) {
+    cleanupFrame = window.requestAnimationFrame(flushPlayerButtonCleanup);
   }
-
-  hasAppliedCleanup = false;
 }
 
 function refreshPlayerControlsController() {
@@ -152,31 +168,23 @@ function refreshPlayerControlsController() {
   syncLyricsButtonClass(settings);
   restoreLegacySpicyLyricsButtons();
 
-  const active = hasActivePlayerCleanup(settings);
-
-  if (active) {
-    applyPlayerButtonCleanup(settings);
-    if (observer) return;
-
-    observer = new MutationObserver(() => {
-      applyPlayerButtonCleanup();
-    });
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ["aria-label", "title", "data-testid", "data-tooltip"],
-    });
+  if (observer) {
+    for (const control of cleanupTargets) applyControl(control, settings);
     return;
   }
 
-  observer?.disconnect();
-  observer = null;
-
-  if (hasAppliedCleanup) {
-    resetPlayerButtonCleanup();
+  // Scan once; subsequent settings changes revisit only known cleanup targets.
+  for (const control of document.querySelectorAll<HTMLElement>(candidateSelector)) {
+    applyControl(control, settings);
   }
+  observer = new MutationObserver(onPlayerControlMutations);
+  observer.observe(document.body, {
+    childList: true,
+    characterData: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ["aria-label", "title", "data-testid", "data-tooltip", "data-restore-focus-key"],
+  });
 }
 
 function onSettingsChanged(event: Event) {
