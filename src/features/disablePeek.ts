@@ -3,10 +3,15 @@ import { SETTINGS_CHANGED_EVENT, getSettings } from "../config";
 const EXTRA_CONTROLS_SELECTOR = ".main-nowPlayingBar-extraControls";
 const LYRICS_BUTTON_SELECTOR = 'button[data-testid="lyrics-button"]';
 const PROXY_SELECTOR = 'button[data-spotify-plus-disable-peek="true"]';
-const RIGHT_SIDEBAR_SELECTOR = ".Root__right-sidebar, .Root__right-sidebar-overlayWrapper";
-const RIGHT_SIDEBAR_STATE_SELECTOR = ".Root__right-sidebar-peek, .Root__right-sidebar-peekContent";
+// Spotify 1.3.3 hashes cover classes that Spicetify does not yet map.
+const RIGHT_SIDEBAR_SELECTOR =
+  ".Root__right-sidebar, .Root__right-sidebar-overlayWrapper, .AOAgML4d2nmdGZhmu3QM";
+const PEEK_CONTENT_SELECTOR =
+  ".Root__right-sidebar-peekContent, .iiR6n0DX0oZ32dohbXPw";
+const RIGHT_SIDEBAR_STATE_SELECTOR =
+  `.Root__right-sidebar-peek, .D0qWErHdvHknfXqr6zOl, ${PEEK_CONTENT_SELECTOR}`;
 const SHOW_BUTTON_SELECTOR =
-  '.Root__right-sidebar-overlayButton, button[aria-label="Show Now Playing view"]';
+  '.Root__right-sidebar-overlayButton, .MjfZtwoxvvPxZfZDM4ct, button[aria-label="Show Now Playing view"]';
 const HIDE_BUTTON_SELECTOR =
   '.main-nowPlayingView-headerCloseButton, button[aria-label="Hide Now Playing view"], [data-testid="PanelHeader_CloseButton"] button[aria-label="Close"]';
 const ENABLED_CLASS = "spotify-plus-disable-peek";
@@ -51,10 +56,17 @@ function isNowPlayingOpen() {
     'aside[aria-label="Now playing view"], .NowPlayingView'
   );
   const peekContent = nowPlayingView?.closest<HTMLElement>(
-    ".Root__right-sidebar-peekContent"
+    PEEK_CONTENT_SELECTOR
   );
-  if (peekContent) return peekContent.getAttribute("aria-hidden") === "false";
-  return Boolean(nowPlayingView?.closest(".Root__right-sidebar-expanded"));
+  if (peekContent) {
+    return (
+      peekContent.getAttribute("aria-hidden") === "false" &&
+      !peekContent.hasAttribute("inert")
+    );
+  }
+  return Boolean(
+    nowPlayingView?.closest(".Root__right-sidebar-expanded, .THkMJ1bnCmatvnJALZkH")
+  );
 }
 
 function setProxyOpenState(open: boolean) {
@@ -88,8 +100,13 @@ async function waitForNativeButton(targetOpen: boolean, epoch: number) {
     desiredOpen === targetOpen &&
     performance.now() < deadline
   ) {
-    const button = document.querySelector<HTMLButtonElement>(selector);
-    if (button?.isConnected) return button;
+    const button = [...document.querySelectorAll<HTMLButtonElement>(selector)].find(
+      (candidate) =>
+        candidate.isConnected &&
+        !candidate.disabled &&
+        candidate.getAttribute("aria-disabled") !== "true"
+    );
+    if (button) return button;
     await delay(50);
   }
 
@@ -304,7 +321,7 @@ function observeSidebar() {
   });
   sidebarObserver.observe(sidebar, {
     attributes: true,
-    attributeFilter: ["class"],
+    attributeFilter: ["class", "aria-hidden", "inert"],
     childList: true,
     subtree: true,
   });
