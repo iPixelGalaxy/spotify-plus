@@ -3,8 +3,9 @@ import { SETTINGS_CHANGED_EVENT, getSettings } from "../config";
 const EXTRA_CONTROLS_SELECTOR = ".main-nowPlayingBar-extraControls";
 const PLAYBAR_SELECTOR = '[data-testid="now-playing-bar"], .Root__now-playing-bar';
 const LYRICS_BUTTON_SELECTOR = 'button[data-testid="lyrics-button"]';
+const QUEUE_BUTTON_SELECTOR = 'button[data-testid="control-button-queue"]';
 const PLAYBAR_ANCHOR_SELECTOR =
-  `${LYRICS_BUTTON_SELECTOR}, button[data-testid="control-button-queue"], button[data-testid="pip-toggle-button"], button[data-testid="fullscreen-mode-button"]`;
+  `${LYRICS_BUTTON_SELECTOR}, ${QUEUE_BUTTON_SELECTOR}, button[data-testid="pip-toggle-button"], button[data-testid="fullscreen-mode-button"]`;
 const PROXY_SELECTOR = 'button[data-spotify-plus-disable-peek="true"]';
 const MAIN_VIEW_SELECTOR = '#main-view, .Root__main-view';
 const NOW_PLAYING_VIEW_SELECTOR =
@@ -13,8 +14,9 @@ const PANEL_SELECTOR = `#Desktop_PanelContainer_Id, ${NOW_PLAYING_VIEW_SELECTOR}
 const PEEK_CONTENT_SELECTOR = '.Root__right-sidebar-peekContent, [aria-hidden], [inert], [hidden]';
 const SHOW_BUTTON_SELECTOR =
   'button.Root__right-sidebar-overlayButton, button[aria-label="Show Now Playing view" i]';
+const PANEL_CLOSE_BUTTON_SELECTOR = '[data-testid="PanelHeader_CloseButton"] button';
 const HIDE_BUTTON_SELECTOR =
-  'button.main-nowPlayingView-headerCloseButton, button[aria-label="Hide Now Playing view" i], [data-testid="PanelHeader_CloseButton"] button';
+  `button.main-nowPlayingView-headerCloseButton, button[aria-label="Hide Now Playing view" i], ${PANEL_CLOSE_BUTTON_SELECTOR}`;
 const NATIVE_PLAYBAR_BUTTON_SELECTOR =
   `button[data-testid="control-button-npv"]:not(${PROXY_SELECTOR}), button[data-testid="cover-art-button"]`;
 const STRUCTURAL_SELECTOR =
@@ -100,7 +102,15 @@ function isPeekHidden(sidebar: HTMLElement) {
   );
 }
 
+function isQueueOpen() {
+  return [...document.querySelectorAll<HTMLButtonElement>(QUEUE_BUTTON_SELECTOR)].some(
+    (button) => button.getAttribute("aria-pressed") === "true" || button.dataset.active === "true"
+  );
+}
+
 function isNowPlayingOpen() {
+  // Spotify retains the previous panel DOM while Queue is entering.
+  if (isQueueOpen()) return false;
   return [...document.querySelectorAll<HTMLElement>(NOW_PLAYING_VIEW_SELECTOR)].some(
     (view) =>
       !view.closest('[aria-hidden="true"], [inert], [hidden], .Root__right-sidebar-collapsed')
@@ -127,6 +137,27 @@ function delay(milliseconds: number) {
   });
 }
 
+function isNativeButtonAvailable(button: HTMLButtonElement) {
+  return button.isConnected && !button.disabled &&
+    button.getAttribute("aria-disabled") !== "true" &&
+    !button.closest('[inert], [aria-hidden="true"], [hidden]');
+}
+
+function findNativeNowPlayingToggle() {
+  const sidebar = findSidebar();
+  const candidates = [...(sidebar ?? document).querySelectorAll<HTMLButtonElement>(SHOW_BUTTON_SELECTOR)];
+  if (sidebar) {
+    const content = findPeekContent(sidebar);
+    // The overlay is the only button outside the panel; its label is localized.
+    const overlayButtons = [...sidebar.querySelectorAll<HTMLButtonElement>('button')]
+      .filter((candidate) => content && !content.contains(candidate));
+    if (overlayButtons.length === 1) candidates.push(overlayButtons[0]);
+  }
+  const playbar = document.querySelector<HTMLElement>(PLAYBAR_SELECTOR);
+  candidates.push(...(playbar ?? document).querySelectorAll<HTMLButtonElement>(NATIVE_PLAYBAR_BUTTON_SELECTOR));
+  return candidates.find(isNativeButtonAvailable) ?? null;
+}
+
 async function waitForNativeButton(targetOpen: boolean, epoch: number) {
   const deadline = performance.now() + BUTTON_WAIT_TIMEOUT;
 
@@ -137,27 +168,10 @@ async function waitForNativeButton(targetOpen: boolean, epoch: number) {
     desiredOpen === targetOpen &&
     performance.now() < deadline
   ) {
-    const sidebar = findSidebar();
     const view = document.querySelector<HTMLElement>(NOW_PLAYING_VIEW_SELECTOR);
-    const root = targetOpen ? sidebar : view;
-    const selector = targetOpen ? SHOW_BUTTON_SELECTOR : HIDE_BUTTON_SELECTOR;
-    const candidates = [...(root ?? document).querySelectorAll<HTMLButtonElement>(selector)];
-    if (targetOpen && sidebar) {
-      const content = findPeekContent(sidebar);
-      // The overlay is the only button outside the panel; its label is localized.
-      const overlayButtons = [...sidebar.querySelectorAll<HTMLButtonElement>('button')]
-        .filter((candidate) => content && !content.contains(candidate));
-      if (overlayButtons.length === 1) candidates.push(overlayButtons[0]);
-    }
-    const playbar = document.querySelector<HTMLElement>(PLAYBAR_SELECTOR);
-    candidates.push(...(playbar ?? document).querySelectorAll<HTMLButtonElement>(NATIVE_PLAYBAR_BUTTON_SELECTOR));
-    const button = candidates.find(
-      (candidate) =>
-        candidate.isConnected &&
-        !candidate.disabled &&
-        candidate.getAttribute("aria-disabled") !== "true" &&
-        !candidate.closest('[inert], [aria-hidden="true"], [hidden]')
-    );
+    const hideButton = targetOpen || !view ? null :
+      [...view.querySelectorAll<HTMLButtonElement>(HIDE_BUTTON_SELECTOR)].find(isNativeButtonAvailable);
+    const button = hideButton ?? findNativeNowPlayingToggle();
     if (button) return button;
     await delay(50);
   }
@@ -236,6 +250,41 @@ function startTransitionRunner() {
     setProxyState();
     if (desiredOpen !== null) startTransitionRunner();
   });
+}
+
+function cancelTransition() {
+  transitionEpoch += 1;
+  desiredOpen = null;
+  transitionRunner = null;
+}
+
+function onQueueClick(event: MouseEvent) {
+  if (!isEnabled() || !(event.target instanceof Element)) return;
+
+  const button = event.target.closest<HTMLButtonElement>('button');
+  if (!button || !isNativeButtonAvailable(button)) return;
+  const queueOpen = isQueueOpen();
+  const queueButton = button.matches(QUEUE_BUTTON_SELECTOR);
+  const queueCloseButton = queueOpen && button.matches(PANEL_CLOSE_BUTTON_SELECTOR) &&
+    findSidebar()?.contains(button);
+  if (!queueButton && !queueCloseButton) return;
+
+  cancelTransition();
+  setProxyOpenState(false);
+  if (!queueOpen) return;
+
+  const toggle = findNativeNowPlayingToggle();
+  if (!toggle) return;
+
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  // Native Queue close restores the previous panel. Two synchronous NPV toggles
+  // instead move Queue to Now Playing, then Disabled, before the browser paints.
+  toggle.click();
+  (findNativeNowPlayingToggle() ?? toggle).click();
+  if (event.detail > 0) button.blur();
+  else document.querySelector<HTMLButtonElement>(QUEUE_BUTTON_SELECTOR)?.focus({ preventScroll: true });
+  scheduleSync();
 }
 
 function toggleNowPlayingView(event: MouseEvent) {
@@ -332,7 +381,9 @@ function positionProxyButton() {
     }
   }
   observedControls = extraControls;
-  styleProxyButton(nativeButton);
+  const templateButton = [...extraControls.querySelectorAll<HTMLButtonElement>(PLAYBAR_ANCHOR_SELECTOR)]
+    .find((candidate) => candidate.dataset.active !== "true" && candidate.getAttribute("aria-pressed") !== "true") ?? nativeButton;
+  styleProxyButton(templateButton);
 
   let anchor: HTMLElement = nativeButton;
   while (anchor.parentElement && anchor.parentElement !== extraControls) {
@@ -344,9 +395,7 @@ function positionProxyButton() {
 }
 
 function removeProxyButton() {
-  transitionEpoch += 1;
-  desiredOpen = null;
-  transitionRunner = null;
+  cancelTransition();
   proxyButton?.deregister();
   proxyButton = null;
 }
@@ -448,7 +497,7 @@ function startBodyObserver() {
     childList: true,
     subtree: true,
     attributes: true,
-    attributeFilter: ["class", "aria-label", "data-testid"],
+    attributeFilter: ["class", "aria-label", "data-testid", "aria-pressed", "data-active"],
   });
 }
 
@@ -482,6 +531,7 @@ function syncDisablePeekMode() {
 
 export function startDisablePeekController() {
   syncDisablePeekMode();
+  document.addEventListener("click", onQueueClick, true);
 
   window.addEventListener(SETTINGS_CHANGED_EVENT, (event) => {
     const key = (event as CustomEvent<{ key?: string }>).detail?.key;
