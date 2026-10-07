@@ -114,7 +114,7 @@ function setProxyOpenState(open: boolean) {
   element.setAttribute("aria-pressed", open ? "true" : "false");
   element.dataset.active = open ? "true" : "false";
   element.classList.toggle("main-genericButton-buttonActive", open);
-  element.classList.remove("main-genericButton-buttonActiveDot");
+  element.classList.toggle("main-genericButton-buttonActiveDot", open);
 }
 
 function setProxyState() {
