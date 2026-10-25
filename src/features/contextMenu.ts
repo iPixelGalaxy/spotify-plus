@@ -21,13 +21,12 @@ type ContextMenuV2 = {
 
 const NOW_PLAYING_SELECTOR =
   "[data-testid='now-playing-widget'], [data-testid='now-playing-widget-v2'], .main-nowPlayingWidget-nowPlaying";
-const COVER_ART_SELECTOR = "[data-testid='cover-art-button'], [data-testid='cover-art-container']";
-let coverArtContext: MenuArguments | undefined;
+let nowPlayingContext: MenuArguments | undefined;
 
 document.addEventListener(
   "contextmenu",
   () => {
-    coverArtContext = undefined;
+    nowPlayingContext = undefined;
   },
   true
 );
@@ -40,28 +39,28 @@ function getMenuArguments(props: unknown, trigger?: string, target?: HTMLElement
   const parsed = getContextMenuV2()?.parseProps(props);
   if (parsed) return parsed;
 
-  // Spotify's new cover-art menu wrapper exposes canToggleCanvas, but no item URI.
+  // Spotify's new Now Playing menu wrapper exposes canToggleCanvas, but no item URI.
+  // The same wrapper serves the cover art and song title.
   if (
     trigger !== "right-click" ||
     !(target instanceof HTMLElement) ||
-    !target.closest(NOW_PLAYING_SELECTOR) ||
-    !(target.closest(COVER_ART_SELECTOR) || target.querySelector(COVER_ART_SELECTOR))
+    !target.closest(NOW_PLAYING_SELECTOR)
   ) {
     return undefined;
   }
 
-  if (!coverArtContext) {
+  if (!nowPlayingContext) {
     const state = Spicetify.Player.data;
     if (!state?.item?.uri) return undefined;
     // Keep actions bound to the item selected when the menu opened, even after a song change.
-    coverArtContext = [
+    nowPlayingContext = [
       [state.item.uri],
       state.item.uid ? [state.item.uid] : undefined,
       state.context?.uri,
     ];
   }
 
-  return coverArtContext;
+  return nowPlayingContext;
 }
 
 function withMenuArguments(shouldAdd: MenuPredicate) {

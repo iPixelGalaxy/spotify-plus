@@ -73,7 +73,11 @@ function immediateItems(menu: HTMLElement) {
 }
 
 function itemLabel(item: HTMLElement) {
-  return normalizeText(item.textContent);
+  const button = item.querySelector<HTMLElement>(":scope > [role='menuitem']");
+  const label = button?.querySelector<HTMLElement>(
+    ".main-contextMenu-menuItemLabel, [data-encore-id='text'], [data-encore-id='type']"
+  );
+  return normalizeText(label?.textContent);
 }
 
 function findNativeShare() {
