@@ -1,5 +1,6 @@
 import { getSetting, SETTINGS_CHANGED_EVENT } from "../config";
 import { isElementVisible, normalizeText, toggleElementDisplay } from "../dom";
+import { createContextMenuItem, createContextMenuSubMenu } from "./contextMenu";
 
 const MARKER_ATTRIBUTE = "data-spotify-plus-share-menu";
 const NATIVE_ATTRIBUTE = "data-spotify-plus-native-share";
@@ -165,7 +166,7 @@ function scheduleSync() {
 export function startShareMenuController() {
   const copyItems = SHARE_LABELS.map(
     (label) =>
-      new Spicetify.ContextMenu.Item(
+      createContextMenuItem(
         `Copy link to ${label}`,
         (uris) => void copyLink(uris),
         (uris) => matchesShareLabel(uris, label),
@@ -174,7 +175,7 @@ export function startShareMenuController() {
   );
   const embedItems = SHARE_LABELS.map(
     (label) =>
-      new Spicetify.ContextMenu.Item(
+      createContextMenuItem(
         `Embed ${label}`,
         (uris) => {
           void openEmbed(uris);
@@ -186,13 +187,13 @@ export function startShareMenuController() {
         EMBED_ICON_PATH
       )
   );
-  const dialogItem = new Spicetify.ContextMenu.Item(
+  const dialogItem = createContextMenuItem(
     "Open new Share dialog",
     () => void clickNativeShare(),
     shouldAddShareMenu,
     SHARE_ICON_PATH
   );
-  const shareMenu = new Spicetify.ContextMenu.SubMenu(
+  const shareMenu = createContextMenuSubMenu(
     `Share\u2063`,
     [...copyItems, ...embedItems, dialogItem],
     shouldAddShareMenu

@@ -1,4 +1,5 @@
 import { normalizeText } from "../dom";
+import { createContextMenuItem, createContextMenuSubMenu } from "./contextMenu";
 
 const COPY_MENU_ICON_CLASS = "spotify-plus-copy-menu-icon";
 const COPY_MENU_WRAPPER_CLASS = "spotify-plus-copy-menu-wrapper";
@@ -215,7 +216,7 @@ function scheduleCopyMenuSync() {
 }
 
 export function startCopyMenuController() {
-  const copySongArtistItem = new Spicetify.ContextMenu.Item(
+  const copySongArtistItem = createContextMenuItem(
     "Copy Song & Artist Name",
     (uris: string[]) => {
       void copySongAndArtistNames(uris);
@@ -225,7 +226,7 @@ export function startCopyMenuController() {
     false
   );
 
-  const copyIdItem = new Spicetify.ContextMenu.Item(
+  const copyIdItem = createContextMenuItem(
     "Copy ID",
     (uris: string[]) => {
       void copyTrackIds(uris);
@@ -235,7 +236,7 @@ export function startCopyMenuController() {
     false
   );
 
-  const copyIdsItem = new Spicetify.ContextMenu.Item(
+  const copyIdsItem = createContextMenuItem(
     "Copy IDs",
     (uris: string[]) => {
       void copyTrackIds(uris);
@@ -245,7 +246,7 @@ export function startCopyMenuController() {
     false
   );
 
-  const copySubMenu = new Spicetify.ContextMenu.SubMenu(
+  const copySubMenu = createContextMenuSubMenu(
     "Copy",
     [copySongArtistItem, copyIdItem],
     shouldAddCopySubMenu,
