@@ -2,7 +2,7 @@ import { defineConfig } from "@spicemod/creator";
 
 export default defineConfig({
   name: "spotify-plus",
-  version: "0.1.0",
+  version: "0.3.6",
   framework: "react",
   linter: "oxlint",
   template: "extension",

@@ -1,12 +1,12 @@
 {
   "name": "spotify-plus",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "private": true,
   "description": "A Spicetify extension for reducing Spotify UI clutter and adding configurable menu cleanup.",
   "scripts": {
     "sc": "spicetify-creator",
     "dev": "spicetify-creator dev",
-    "build": "spicetify-creator build",
+    "build": "node project/build.mjs",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "fmt": "oxfmt"

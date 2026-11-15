@@ -27,14 +27,14 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
         with:
           ref: ${{ inputs.target_ref }}
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7.1.0
         with:
-          node-version: 22
+          node-version: node
           cache: npm
 
       - name: Install dependencies
@@ -61,15 +61,17 @@ jobs:
         run: |
           $version = "${{ inputs.version }}"
           $bundleName = "spotify-plus-v$version.zip"
-          Compress-Archive -Path dist\spotify-plus.js,README.md,manifest.json,install.ps1,install.sh,uninstall.ps1,uninstall.sh -DestinationPath $bundleName -Force
+          Compress-Archive -Path dist\spotify-plus.js,dist\spotify-plus-runtime.js,README.md,manifest.json,install.ps1,install.sh,uninstall.ps1,uninstall.sh -DestinationPath $bundleName -Force
 
       - name: Publish release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3.0.4
         with:
           tag_name: v${{ inputs.version }}
           name: v${{ inputs.version }}
+          make_latest: true
           body: ${{ inputs.release_notes }}
           generate_release_notes: ${{ inputs.release_notes == '' }}
           files: |
             dist/spotify-plus.js
+            dist/spotify-plus-runtime.js
             spotify-plus-v${{ inputs.version }}.zip

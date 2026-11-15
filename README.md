@@ -2,6 +2,10 @@
 
 `spotify-plus` is a Spicetify extension focused on cleaning up Spotify’s UI, making playlist actions more usable, and adding a few quality-of-life tools that Spotify does not expose cleanly by default.
 
+From 0.3.6, the installed launcher loads the latest published GitHub release when Spotify starts. Existing users need to update once to receive this launcher; future updates need only a Spotify reload. A cached runtime is available if a later download fails.
+
+When an integrated Lyssna Lyrics build is running, Spotify+ stays installed but does not load its menu, tools, styles, or feature handlers. Lyssna shows a one-time integration notice. Spotify+ runs normally with Spicy Lyrics or a Lyssna build without Enhancements.
+
 ## What It Does
 
 ### Settings And Entry Points
@@ -33,8 +37,8 @@
 - Best-effort devtools opening on startup when Spotify exposes a working API.
 - Restore the previous Spotify route across launches.
 - Show an in-app update prompt when a newer GitHub release is available.
-  - includes a platform-appropriate install/update command
-  - lets you copy the command, open the release, or skip that version
+  - reload Spotify to load the new release automatically
+  - open the release notes or skip that version
 
 ### Add To Playlist Override
 
@@ -191,6 +195,7 @@ It:
 - packages release assets
 - publishes a manual GitHub release with:
   - `spotify-plus.js`
+  - `spotify-plus-runtime.js`
   - a versioned zip bundle
   - install / uninstall scripts for Windows, macOS, and Linux
 

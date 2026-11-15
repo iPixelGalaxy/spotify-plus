@@ -44,52 +44,6 @@ function isVersionNewer(latestVersion: string, currentVersion: string) {
   return false;
 }
 
-function getPlatform() {
-  const navigatorPlatform =
-    navigator.userAgentData?.platform ??
-    navigator.platform ??
-    navigator.userAgent ??
-    "";
-  const normalizedNavigatorPlatform =
-    typeof navigatorPlatform === "string" ? navigatorPlatform.toLowerCase() : "";
-
-  if (normalizedNavigatorPlatform.includes("win")) {
-    return "win32";
-  }
-  if (normalizedNavigatorPlatform.includes("mac")) {
-    return "darwin";
-  }
-  if (
-    normalizedNavigatorPlatform.includes("linux") ||
-    normalizedNavigatorPlatform.includes("x11")
-  ) {
-    return "linux";
-  }
-
-  return "";
-}
-
-function getUpdateInstallCommand() {
-  const platform = getPlatform();
-  if (platform === "win32") {
-    return "irm https://raw.githubusercontent.com/iPixelGalaxy/spotify-plus/master/install.ps1 | iex";
-  }
-
-  return "curl -fsSL https://raw.githubusercontent.com/iPixelGalaxy/spotify-plus/master/install.sh | bash";
-}
-
-async function copyCommand(command: string) {
-  try {
-    if (Spicetify.Platform?.ClipboardAPI?.copy) {
-      Spicetify.Platform.ClipboardAPI.copy(command);
-    } else {
-      await navigator.clipboard.writeText(command);
-    }
-    Spicetify.showNotification("Spotify+: copied update command");
-  } catch {
-    Spicetify.showNotification("Spotify+: failed to copy update command", true);
-  }
-}
 
 function closeExistingPrompt() {
   document.querySelector(`.${UPDATE_OVERLAY_CLASS}`)?.remove();
@@ -136,7 +90,6 @@ export function openUpdatePrompt(release: LatestRelease | null = availableReleas
     dialog.remove();
   };
 
-  const command = getUpdateInstallCommand();
 
   const header = document.createElement("div");
   header.className = `${UPDATE_DIALOG_CLASS}Header`;
@@ -157,11 +110,7 @@ export function openUpdatePrompt(release: LatestRelease | null = availableReleas
   body.className = `${UPDATE_DIALOG_CLASS}Body`;
 
   const message = document.createElement("p");
-  message.textContent = `You're running ${getCurrentVersion()}. Install ${release.version} with:`;
-
-  const commandBlock = document.createElement("div");
-  commandBlock.className = `${UPDATE_DIALOG_CLASS}Command`;
-  commandBlock.textContent = command;
+  message.textContent = `You're running ${getCurrentVersion()}. Reload Spotify to load ${release.version} automatically.`;
 
   const actions = document.createElement("div");
   actions.className = `${UPDATE_DIALOG_CLASS}Actions`;
@@ -188,13 +137,13 @@ export function openUpdatePrompt(release: LatestRelease | null = availableReleas
   const copyButton = document.createElement("button");
   copyButton.className = `${UPDATE_DIALOG_CLASS}Button ${UPDATE_DIALOG_CLASS}ButtonPrimary`;
   copyButton.type = "button";
-  copyButton.textContent = "Copy Command";
+  copyButton.textContent = "Update and reload";
   copyButton.addEventListener("click", () => {
-    void copyCommand(command);
+    window.location.reload();
   });
 
   actions.append(skipButton, releaseButton, copyButton);
-  body.append(message, commandBlock, actions);
+  body.append(message, actions);
   dialog.append(header, body);
 
   overlay.addEventListener("click", closePrompt);
@@ -212,7 +161,7 @@ async function fetchLatestRelease() {
   const response = await fetch(
     `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/latest`,
     {
-      headers: { "User-Agent": "spotify-plus-update-check" },
+      headers: { Accept: "application/vnd.github+json" }, signal: AbortSignal.timeout(5000),
     }
   );
   if (!response.ok) {

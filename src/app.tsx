@@ -1,6 +1,5 @@
 import { ensureDefaultSettings } from "./config";
-import { startFeatureControllers } from "./features";
-import { startToolsController } from "./tools";
+import { runtime, setRuntimeState, shouldStandDown } from "./integration";
 
 async function waitForSpicetify() {
   while (
@@ -14,13 +13,22 @@ async function waitForSpicetify() {
 }
 
 async function main() {
+  if (runtime.bundleStarted) return;
+  runtime.bundleStarted = true;
   await waitForSpicetify();
 
+  if (await shouldStandDown()) {
+    setRuntimeState("standby");
+    return;
+  }
+
   ensureDefaultSettings();
+  const [{ startToolsController }, { startFeatureControllers }] = await Promise.all([import("./tools"), import("./features")]);
+  setRuntimeState("active");
   startToolsController();
   startFeatureControllers();
 
   console.info("[spotify-plus] initialized");
 }
 
-main();
+main().catch(error => console.error("[spotify-plus] Could not start:", error));
